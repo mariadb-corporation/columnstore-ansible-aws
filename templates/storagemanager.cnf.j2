@@ -1,0 +1,144 @@
+# This is the configuration file for StorageManager (SM)
+
+[ObjectStorage]
+# 'service' is the module that SM will use for cloud IO.
+# Current options are “LocalStorage” and “S3”.
+# ‘LocalStorage’ will use a directory on the local filesystem as if it
+# were cloud storage.  ‘S3’ is the module that uses real cloud storage.
+# Both modules have their own sections below.
+#
+# Note, changing this after running postConfigure will leave you with an
+# an inconsistent view of the data.
+service = S3
+
+# object_size is a tuneable value, but also implies a maximum capacity.
+# Each file managed by StorageManager is broken into chunks of
+# object_size bytes.  Each chunk is stored in the cache as a file,
+# so the filesystem the cache is put on needs to have enough inodes to
+# support at least cache_size/object_size files.
+#
+# Regarding tuning, object stores do not support modifying stored data;
+# entire objects must be replaced on modification, and entire
+# objects are fetched on read.  This results in read and write amplification.
+#
+# Network characteristics are important to consider.  If the machine is
+# in the cloud and has low-latency and high-bandwidth access to the object
+# store, then the limiting factor may be the get/put rate imposed by your
+# cloud provider.  In that case, using a larger object size will reduce
+# the number of get/put ops required to perform a task.  If the machine has
+# low-bandwidth access to the object store, a lower value will reduce
+# the degree of read/write amplification, reducing the total amount of data
+# to transfer.
+#
+# Of course, you will only really know how a complex system works by
+# experimentation.  If you experience poor performance using the default,
+# our suggestion is to reduce it to 2M and try again, then increase it to
+# 10M and try again.
+#
+# object_size should not be changed after you have run postConfigure.
+# Things may fail that normally wouldn't.  This is a temporary limitation which
+# will be addressed in later versions.
+object_size = 5M
+
+# metadata_path is where SM will put its metadata.  From the caller's
+# perspective, each file will be represented by a metadata file in this
+# path.  A metadata file is a small json document enumerating the objects
+# that compose the file.
+metadata_path = /var/lib/columnstore/storagemanager/metadata
+
+# journal_path is where SM will store deltas to apply to objects.
+# If an existing object is modified, that modification (aka delta) will
+# be written to a journal file corresponding to that object.  Periodically,
+# those deltas will be merged with the object they apply to, resulting
+# in a new object.
+journal_path = /var/lib/columnstore/storagemanager/journal
+
+# max_concurrent_downloads is what is sounds like, per node.
+# This is not a global setting.
+#
+# The default was changed from 20 to 21 as a temporary workaround
+# for a bug.  It can be anything but 20.
+max_concurrent_downloads = 21
+
+# max_concurrent_uploads is what is sounds like, per node.
+# This is not a global setting.  Currently, a file is locked while
+# modifications to it are synchronized with cloud storage.  If your network
+# has low upstream bandwidth, consider lowering this value to the minimum
+# necessary to saturate your network.  This will reduce the latency of certain
+# operations and improve your experience.
+#
+# The default was changed from 20 to 21 as a temporary workaround
+# for a bug.  It can be anything but 20.
+max_concurrent_uploads = 21
+
+# common_prefix_depth is the depth of the common prefix that all files
+# managed by SM have.  Ex: /var/lib/columnstore/data1, and
+# /var/lib/columnstore/data2 differ at the 4th directory element,
+# so they have a common prefix depth of 3.  For Columnstore, it should
+# be set to the number of directories that precede the data* directories.
+# The default value of 3 works with package installations, where data* would be in
+# /var/lib/columnstore
+#
+# This value is used to manage the ownership of prefixes between
+# StorageManager instances that share a filesystem.  For example,
+# if you have SM data stored on a distributed filesystem for fault-tolerance
+# reasons, and all nodes have it mounted, SM instances will be able to
+# negotiate ownership of data from a failed instance.
+common_prefix_depth = 3
+
+[S3]
+# These should be self-explanatory.  Region can be blank or commented
+# if using a private cloud storage system.  Bucket has to be set to
+# something though.  Obviously, do not change these after running
+# postConfigure, or SM will not be able to find your data.
+region = {{ s3_region }}
+bucket = {{ s3_bucket }}
+
+# Specify the endpoint to connect to if using an S3 compatible object
+# store like Google Cloud Storage or IBM's Cleversafe.
+endpoint = {{ s3_endpoint }}
+
+# For the best performance do not specify a prefix.  It may be useful,
+# however, if you must use a bucket with other data in it.  Because
+# of the way object stores route data and requests, keep the
+# prefix as short as possible for performance reasons.
+# prefix = cs/
+
+# Put your HMAC access keys here.  Keys can also be set through the
+# environment vars AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY.
+# If set, SM will use these values and ignore the envvars.
+aws_access_key_id = {{ s3_access_key_id }}
+aws_secret_access_key = {{ s3_secret_access_key }}
+
+
+# The LocalStorage section configures the 'local storage' module
+# if specified by ObjectStorage/service.
+[LocalStorage]
+
+# path specifies where the module should store object data.
+path = /var/lib/columnstore/storagemanager/fake-cloud
+
+# introduce latency to fake-cloud operations.  Useful for debugging.
+fake_latency = n
+
+# max_latency specifies how much latency should be added to fake-cloud
+# ops.  Values are randomized between 1 and max_latency in microseconds.
+max_latency = 50000
+
+[Cache]
+
+# cache_size can be specified in terms of tera-, giga-, mega-, kilo-
+# bytes using T/t G/g M/m K/k.  Drive manufacturers use a power-of-10
+# notion of what that means, which means 1m = 1,000,000 bytes.  These
+# settings use the programmer's power-of-2 notion, which means
+# 1m = 1,048,576 bytes.
+#
+# This number will include space used by journal files, but does not
+# include space used by metadata files.  In this version, journal data
+# currently being written and downloads in progress are also not accounted
+# for, so disk usage can temporarily go above this number.  You will want to
+# leave a little space available on the mount for those operations.
+cache_size = 2g
+
+# Cache/path is where cached objects get stored.
+path = /var/lib/columnstore/storagemanager/cache

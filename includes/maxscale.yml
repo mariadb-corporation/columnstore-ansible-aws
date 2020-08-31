@@ -1,0 +1,63 @@
+---
+
+- hosts: "mx1"
+  become: yes
+  become_user: root
+  vars_files:
+    - '../inventory/group_vars/distro/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}.yml'
+
+  tasks:
+
+  - name: "Copy MaxScale Static Config"
+    template:
+      src: ../templates/maxscale.cnf.j2
+      dest: /etc/maxscale.cnf
+
+  - name: "Restart MaxScale"
+    systemd:
+      state: restarted
+      name: maxscale
+
+  - name: "Adding Servers To MaxScale"
+    uri:
+      url: http://{{ hostvars.mx1.ansible_host }}:8989/v1/servers
+      method: POST
+      body_format: json
+      body: {"data":{"id":"{{ item.name }}","type":"servers","attributes":{"parameters":{"address":"{{ item.host }}","protocol":"MariaDBBackend"}}}}
+      user: admin
+      password: mariadb
+      status_code: 204
+    loop:
+       - {"name": "pm1", "host": "{{ hostvars.pm1.ansible_host }}"}
+       - {"name": "pm2", "host": "{{ hostvars.pm2.ansible_host }}"}
+       - {"name": "pm3", "host": "{{ hostvars.pm3.ansible_host }}"}
+
+  - name: "Adding Monitor To MaxScale"
+    uri:
+      url: http://{{ hostvars.mx1.ansible_host }}:8989/v1/monitors
+      method: POST
+      body_format: json
+      body: {"data":{"id":"mcs_monitor","type":"monitors","attributes":{"module":"mariadbmon","parameters":{"monitor_interval":1000,"user":"{{ maxscale_user }}","password":"{{ maxscale_pass }}","replication_user":"'$REP_USER'","replication_password":"'$REP_PASS'","detect_replication_lag":true,"enforce_read_only_slaves":true,"auto_failover":true,"auto_rejoin":true}},"relationships":{"servers":{"data":[{"id":"pm1","type":"servers"},{"id":"pm2","type":"servers"},{"id":"pm3","type":"servers"}]}}}}
+      user: admin
+      password: mariadb
+      status_code: 204
+
+  - name: "Adding Router To MaxScale"
+    uri:
+      url: http://{{ hostvars.mx1.ansible_host }}:8989/v1/services
+      method: POST
+      body_format: json
+      body: {"data":{"id":"mcs_service","type":"services","attributes":{"router":"readwritesplit","parameters":{"user":"{{ maxscale_user }}","password":"{{ maxscale_pass }}"}},"relationships":{"servers":{"data":[{"id":"pm1","type":"servers"},{"id":"pm2","type":"servers"},{"id":"pm3","type":"servers"}]}}}}
+      user: admin
+      password: mariadb
+      status_code: 204
+
+  - name: "Adding Listener To MaxScale"
+    uri:
+      url: http://{{ hostvars.mx1.ansible_host }}:8989/v1/listeners
+      method: POST
+      body_format: json
+      body: {"data":{"id":"mcs_listener","type":"listeners","attributes":{"parameters":{"protocol":"MariaDBClient","port":3306}},"relationships":{"services":{"data":[{"id":"mcs_service","type":"services"}]}}}}
+      user: admin
+      password: mariadb
+      status_code: 204

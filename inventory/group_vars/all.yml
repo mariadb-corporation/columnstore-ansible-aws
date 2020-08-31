@@ -1,0 +1,28 @@
+---
+# Version Configuration
+mariadb_version: 10.5
+maxscale_version: 2.5
+
+# MariaDB Enterprise Token
+enterprise_token:
+
+# Columnstore CMAPI key
+api_key: somekey123
+
+# Database Credentials
+admin_pass: DemoPassword1~
+admin_user: admin
+cej_pass: DemoPassword1~
+cej_user: cej
+maxscale_user: maxscale
+maxscale_pass: DemoPassword1~
+repli_pass: DemoPassword1~
+repli_user: replica
+
+# Storage Manager Configuration
+use_s3: false
+s3_endpoint:
+s3_region:
+s3_bucket:
+s3_access_key_id:
+s3_secret_access_key:

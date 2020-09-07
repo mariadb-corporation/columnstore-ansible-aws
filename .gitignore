@@ -1,6 +1,2 @@
-*.retry
 .DS_Store
-.vagrant
-ubuntu-bionic-18.04-cloudimg-console.log
-bug.txt
-notes.txt
+.idea

@@ -3,9 +3,6 @@
 mariadb_version: 10.5
 maxscale_version: 2.5
 
-# MariaDB Enterprise Token
-enterprise_token:
-
 # Columnstore CMAPI key
 api_key: somekey123
 

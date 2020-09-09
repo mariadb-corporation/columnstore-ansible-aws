@@ -7,7 +7,7 @@
     "type": "amazon-ebs",
     "profile": "default",
     "region": "eu-west-2",
-    "source_ami": "ami-02c1c728e14556bfe",
+    "source_ami": "ami-0287acb18b6d8efff",
     "vpc_id": "vpc-04332eb29585921e1",
     "subnet_id": "subnet-0fbdf398ee3dc6f0d",
     "instance_type": "t3a.large",

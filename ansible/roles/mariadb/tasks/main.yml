@@ -189,16 +189,16 @@
   when: not stat_result.stat.exists
 
 - name: "Configuring columnstore.cnf"
-   blockinfile:
-     path: '{{ columnstore_cnf }}'
-     block: |
-       character_set_server = utf8
-       collation_server = utf8_general_ci
-       log_bin = /var/lib/mysql/mariadb-bin
-       log_bin_index = /var/lib/mysql/mariadb-bin.index
-       relay_log = /var/lib/mysql/mariadb-relay
-       relay_log_index = /var/lib/mysql/mariadb-relay.index
-       log_slave_updates = ON
-       gtid_strict_mode = ON
-       log_error = /var/log/mariadb/columnstore/mariadb-error.log
-       columnstore_use_import_for_batchinsert=ALWAYS
+  blockinfile:
+   path: '{{ columnstore_cnf }}'
+   block: |
+     character_set_server = utf8
+     collation_server = utf8_genheral_ci
+     log_bin = /var/lib/mysql/mariadb-bin
+     log_bin_index = /var/lib/mysql/mariadb-bin.index
+     relay_log = /var/lib/mysql/mariadb-relay
+     relay_log_index = /var/lib/mysql/mariadb-relay.index
+     log_slave_updates = ON
+     gtid_strict_mode = ON
+     log_error = /var/log/mariadb/columnstore/mariadb-error.log
+     columnstore_use_import_for_batchinsert=ALWAYS

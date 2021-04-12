@@ -1,0 +1,37 @@
+---
+
+- hosts: "primary,replicas,maxscale"
+  become: yes
+  become_user: root
+  vars_files:
+    - '../inventory/group_vars/distro/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}.yml'
+
+  tasks:
+
+  - name: "Installing AWS Tools"
+    package:
+      name: '{{ item }}'
+      state: present
+    with_items:
+      - '{{ awscli }}'
+
+  - name: "Creating .aws Folder"
+    ansible.builtin.file:
+      path: /home/mariadb/.aws
+      state: directory
+
+  - name: "Creating 'awscli' Credentials File"
+    template:
+      src: ../templates/config.j2
+      dest: /home/mariadb/.aws/config
+      owner: mariadb
+      group: mariadb
+      mode: 0600
+
+  - name: "Creating 'awscli' Configuration File"
+    template:
+      src: ../templates/credentials.j2
+      dest: /home/mariadb/.aws/credentials
+      owner: mariadb
+      group: mariadb
+      mode: 0600

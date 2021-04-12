@@ -1,0 +1,89 @@
+---
+
+- hosts: "maxscale"
+  become: yes
+  become_user: root
+  vars_files:
+    - '../inventory/group_vars/distro/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}.yml'
+
+  tasks:
+
+  - name: "Copy MaxScale Static Config"
+    template:
+      src: ../templates/maxscale.cnf.j2
+      dest: /etc/maxscale.cnf
+
+  - name: "Restart MaxScale"
+    systemd:
+      state: restarted
+      name: maxscale
+
+  - name: "Clearing MaxScale"
+    uri:
+      url: http://127.0.0.1:8989/v1/{{ item.resource }}/{{ item.name }}
+      method: DELETE
+      user: admin
+      password: mariadb
+      status_code: 204,404
+    loop:
+      - { resource: monitors, name: mcs_monitor?force=yes }
+      - { resource: services, name: mcs_service?force=yes }
+      - { resource: listeners, name: mcs_listener }
+      - { resource: filters, name: mcs_cache }
+      - { resource: servers, name: mcs1 }
+      - { resource: servers, name: mcs2 }
+      - { resource: servers, name: mcs3 }
+
+  - name: "Adding Cache Filter To MaxScale"
+    uri:
+      url: http://127.0.0.1:8989/v1/filters
+      method: POST
+      body_format: json
+      body: {"data":{"id":"mcs_cache","type":"filters","attributes":{"module":"cache","parameters":{"storage":"storage_{{ elasticache_engine }}","storage_options":"server={{ elasticache_endpoint }}:{{ elasticache_port }}"}}}}
+      user: admin
+      password: mariadb
+      status_code: 204
+
+  - name: "Adding Servers To MaxScale"
+    uri:
+      url: http://127.0.0.1:8989/v1/servers
+      method: POST
+      body_format: json
+      body: {"data":{"id":"{{ item.name }}","type":"servers","attributes":{"parameters":{"address":"{{ item.host }}","protocol":"MariaDBBackend"}}}}
+      user: admin
+      password: mariadb
+      status_code: 204
+    loop:
+       - {"name": "mcs1", "host": "{{ mcs1_private }}"}
+       - {"name": "mcs2", "host": "{{ mcs2_private }}"}
+       - {"name": "mcs3", "host": "{{ mcs3_private }}"}
+
+  - name: "Adding Monitor To MaxScale"
+    uri:
+      url: http://127.0.0.1:8989/v1/monitors
+      method: POST
+      body_format: json
+      body: {"data":{"id":"mcs_monitor","type":"monitors","attributes":{"module":"mariadbmon","parameters":{"monitor_interval":1000,"user":"{{ maxscale_user }}","password":"{{ maxscale_pass }}","replication_user":"{{ repli_user}}","replication_password":"{{ repli_pass }}","detect_replication_lag":true,"cooperative_monitoring_locks":"majority_of_running","enforce_read_only_slaves":true,"auto_failover":true,"auto_rejoin":true}},"relationships":{"servers":{"data":[{"id":"mcs1","type":"servers"},{"id":"mcs2","type":"servers"},{"id":"mcs3","type":"servers"}]}}}}
+      user: admin
+      password: mariadb
+      status_code: 204
+
+  - name: "Adding Service To MaxScale"
+    uri:
+      url: http://127.0.0.1:8989/v1/services
+      method: POST
+      body_format: json
+      body: {"data":{"id":"mcs_service","type":"services","attributes":{"router":"readwritesplit","parameters":{"user":"{{ maxscale_user }}","password":"{{ maxscale_pass }}","master_accept_reads":true}},"relationships":{"filters":{"data":[{"id":"mcs_cache","type":"filters"}]},"servers":{"data":[{"id":"mcs1","type":"servers"},{"id":"mcs2","type":"servers"},{"id":"mcs3","type":"servers"}]}}}}
+      user: admin
+      password: mariadb
+      status_code: 204
+
+  - name: "Adding Listener To MaxScale"
+    uri:
+      url: http://127.0.0.1:8989/v1/listeners
+      method: POST
+      body_format: json
+      body: {"data":{"id":"mcs_listener","type":"listeners","attributes":{"parameters":{"protocol":"MariaDBClient","port":3306}},"relationships":{"services":{"data":[{"id":"mcs_service","type":"services"}]}}}}
+      user: admin
+      password: mariadb
+      status_code: 204

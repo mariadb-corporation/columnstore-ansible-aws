@@ -1,0 +1,87 @@
+---
+
+- hosts: "primary,replicas"
+  become: yes
+  become_user: root
+  vars_files:
+    - '../inventory/group_vars/distro/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}.yml'
+
+  tasks:
+
+  - name: "Adding GlusterFS Repo"
+    dnf:
+      enablerepo: PowerTools
+      name: '{{ gluster_repo }}'
+      state: present
+    when: ansible_distribution_major_version == "8"
+
+  - name: "Adding GlusterFS Repo"
+    package:
+      name: '{{ gluster_repo }}'
+      state: present
+    when: ansible_distribution_major_version == "7"
+
+  - name: "Installing GlusterFS"
+    dnf:
+      enablerepo: PowerTools
+      name: '{{ gluster_server }}'
+      state: present
+    when: ansible_distribution_major_version == "8"
+
+  - name: "Installing GlusterFS"
+    package:
+      name: '{{ gluster_server }}'
+      state: present
+    when: ansible_distribution_major_version == "7"
+
+  - name: "Starting GlusterFS"
+    systemd:
+      state: started
+      name: glusterd
+
+  - name: "Creating GlusterFS Brick Folders"
+    file:
+      path: /brick/{{ item }}
+      state: directory
+    loop:
+       - data1
+       - data2
+       - data3
+
+  - name: "Creating Columnstore Data Folders"
+    file:
+      path: /var/lib/columnstore/{{ item }}
+      state: directory
+    loop:
+       - data1
+       - data2
+       - data3
+
+  - name: "Creating GlusterFS Bricks"
+    gluster_volume:
+      state: present
+      start_on_create: true
+      name: '{{ item }}'
+      bricks: /brick/{{ item }}
+      replicas: 3
+      force: true
+      cluster:
+        - '{{ hostvars.mcs1_private.ansible_host }}'
+        - '{{ hostvars.mcs2_private.ansible_host }}'
+        - '{{ hostvars.mcs3_private.ansible_host }}'
+    run_once: true
+    loop:
+        - data1
+        - data2
+        - data3
+
+  - name: "Mount GlusterFS Volumes"
+    mount:
+      path: /var/lib/columnstore/{{ item }}
+      src: '127.0.0.1:{{ item }}'
+      state: mounted
+      fstype: glusterfs
+    loop:
+        - data1
+        - data2
+        - data3

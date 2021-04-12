@@ -1,0 +1,14 @@
+.DS_Store
+.terraform*
+.variables.tf
+adduser.yml
+all.yml
+ansible.cfg
+build_tests.yml
+crash.log
+create.sh
+destroy.sh
+dwhs.sql
+hosts
+terraform.tfstate*
+variables.bak

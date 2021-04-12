@@ -1,0 +1,25 @@
+---
+
+- hosts: "primary,replicas"
+  become: yes
+  become_user: root
+  vars_files:
+    - '../inventory/group_vars/distro/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}.yml'
+
+  tasks:
+
+  - name: "Creating Prometheus Exporter Repo"
+    get_url:
+      url: https://copr.fedorainfracloud.org/coprs/ibotty/prometheus-exporters/repo/epel-7/ibotty-prometheus-exporters-epel-7.repo
+      dest: /etc/yum.repos.d/_copr_ibotty-prometheus-exporters.repo
+
+  - name: "Installing Prometheus Node Exporter"
+    package:
+      name: node_exporter
+      state: present
+
+  - name: "Starting Prometheus Node Exporter"
+    systemd:
+      name: node_exporter
+      state: started
+      enabled: yes

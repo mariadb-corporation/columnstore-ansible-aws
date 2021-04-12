@@ -1,0 +1,132 @@
+---
+
+- hosts: "primary,replicas,maxscale"
+  become: yes
+  become_user: root
+  vars_files:
+    - '../inventory/group_vars/distro/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}.yml'
+
+  tasks:
+
+  - name: "Scanning For Running Services"
+    service_facts:
+
+  - name: "Setting SELinux Permissive"
+    selinux:
+      policy: targeted
+      state: permissive
+    when: ansible_distribution|lower == 'centos'
+
+  - name: "Disabling firewalld"
+    systemd:
+      name: firewalld
+      state: stopped
+      enabled: no
+    when: (ansible_facts.services["firewalld.service"]["state"]) is defined
+
+  - name: "Disabling AppArmor"
+    systemd:
+      name: apparmor
+      state: stopped
+      enabled: no
+    when: ansible_distribution|lower == 'ubuntu'
+
+  - name: "Disabling UFW"
+    systemd:
+      name: ufw
+      state: stopped
+      enabled: no
+    when: (ansible_facts.services["ufw.service"]["state"]) is defined
+
+  - name: "Upgrading All Packages"
+    package:
+      name: '*'
+      state: latest
+      update_cache: yes
+
+  - name: "Rebooting To Apply Updates"
+    reboot:
+
+  - name: "Installing Some Prerequisites"
+    package:
+      name: '{{ item }}'
+      state: present
+    with_items:
+      - '{{ gcc }}'
+      - '{{ git }}'
+      - '{{ htop }}'
+      - '{{ jemalloc }}'
+      - '{{ jq }}'
+      - '{{ mlocate }}'
+      - '{{ nano }}'
+      - '{{ python_dev }}'
+      - '{{ python_mysql }}'
+      - '{{ python_requests }}'
+      - '{{ tar }}'
+      - '{{ unzip }}'
+      - '{{ wget }}'
+
+- hosts: "primary,replicas"
+  become: yes
+  become_user: root
+  vars_files:
+    - '../inventory/group_vars/distro/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}.yml'
+
+  tasks:
+
+  - name: "Setting System Character Set"
+    command: localedef -i en_US -f UTF-8 en_US.UTF-8
+
+  - name: "Adjusting System vm.swappiness"
+    sysctl:
+      name: vm.swappiness
+      value: '10'
+      state: present
+
+  - name: "Adjusting System vm.vfs_cache_pressure"
+    sysctl:
+      name: vm.vfs_cache_pressure
+      value: '10'
+      state: present
+
+  - name: "Adjusting System net.core.rmem_max"
+    sysctl:
+      name: net.core.rmem_max
+      value: '16777216'
+      state: present
+
+  - name: "Adjusting System net.core.wmem_max"
+    sysctl:
+      name: net.core.wmem_max
+      value: '16777216'
+      state: present
+
+  - name: "Adjusting System net.ipv4.tcp_rmem"
+    sysctl:
+      name: net.ipv4.tcp_rmem
+      value: '4096 87380 16777216'
+      state: present
+
+  - name: "Adjusting System net.ipv4.tcp_wmem"
+    sysctl:
+      name: net.ipv4.tcp_wmem
+      value: '4096 65536 16777216'
+      state: present
+
+  - name: "Adjusting System net.ipv4.tcp_no_metrics_save"
+    sysctl:
+      name: net.ipv4.tcp_no_metrics_save
+      value: '1'
+      state: present
+
+  - name: "Adjusting System net.core.netdev_max_backlog"
+    sysctl:
+      name: net.core.netdev_max_backlog
+      value: '30000'
+      state: present
+
+  - name: "Removing Conflicts"
+    package:
+      name: '{{ mariadb_libs }}'
+      state: absent
+    when: ansible_distribution|lower + ansible_distribution_major_version == "centos7"

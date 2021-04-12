@@ -1,0 +1,22 @@
+mcs1 ansible_host=${publicdns1}
+mcs2 ansible_host=${publicdns2}
+mcs3 ansible_host=${publicdns3}
+mx1 ansible_host=${publicdns4}
+mx2 ansible_host=${publicdns5}
+
+mcs1_private ansible_host=${privatedns1}
+mcs2_private ansible_host=${privatedns2}
+mcs3_private ansible_host=${privatedns3}
+mx1_private ansible_host=${privatedns4}
+mx2_private ansible_host=${privatedns5}
+
+[primary]
+mcs1
+
+[replicas]
+mcs2
+mcs3
+
+[maxscale]
+mx1
+mx2

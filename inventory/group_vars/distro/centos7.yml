@@ -1,0 +1,40 @@
+---
+
+awscli: awscli
+boto: python-boto3
+columnstore_cnf: /etc/my.cnf.d/columnstore.cnf
+dlm_lib: dlm_lib
+dlm: dlm
+fence_agent: fence-agents-aws
+gcc: gcc
+gfs2: gfs2-utils
+git: git
+gluster_repo: centos-release-gluster7
+gluster_server: glusterfs-server
+htop: htop
+jemalloc: jemalloc
+jq: jq
+lvm2: lvm2-cluster
+mariadb_backup: MariaDB-backup
+mariadb_client: MariaDB-client
+mariadb_columnstore_cmapi: mariadb-columnstore-cmapi
+mariadb_columnstore: MariaDB-columnstore-engine
+mariadb_libs: mariadb-libs
+mariadb_repo: /etc/yum.repos.d/mariadb.repo
+mariadb_server: MariaDB-server
+mariadb_shared: MariaDB-shared
+mariadb_socket: /var/lib/mysql/mysql.sock
+maxscale: maxscale
+mlocate: mlocate
+nano: nano
+pcp_zeroconf: pcp-zeroconf
+pcs: pcs
+pre_task: yum -y install epel-release && yum -y install python3
+python_dev: python-devel
+python_mysql: python2-PyMySQL,python3-PyMySQL
+python_requests: python3-requests
+server_cnf: /etc/my.cnf.d/server.cnf
+tar: tar
+unzip: unzip
+version: 7
+wget: wget

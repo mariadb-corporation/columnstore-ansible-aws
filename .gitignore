@@ -3,7 +3,6 @@
 .variables.tf
 adduser.yml
 all.yml
-ansible.cfg
 build_tests.yml
 crash.log
 create.sh

@@ -43,7 +43,7 @@
       host: '127.0.0.1'
       password: '{{ cej_pass }}'
       update_password: on_create
-      priv: '*.*:SELECT'
+      priv: '*.*:SELECT,PROCESS'
       state: present
       login_unix_socket: '{{ mariadb_socket }}'
     no_log: true

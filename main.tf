@@ -169,8 +169,8 @@ resource "aws_elasticache_cluster" "mcscache" {
   engine               = var.elasticache_engine
   node_type            = "cache.r6g.large"
   num_cache_nodes      = 1
-  parameter_group_name = "default.redis6.x"
-  engine_version       = "6.x"
+  parameter_group_name = "default.redis5.0"
+  engine_version       = "5.0.6"
   port                 = var.elasticache_port
   availability_zone    = var.aws_zone
   security_group_ids   = [aws_security_group.mcs_traffic.id]

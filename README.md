@@ -131,10 +131,10 @@ Complete cluster shutdown (Power Off) sequence with [GFS2](https://aws.amazon.co
 Complete cluster bootstrap (Power On) sequence with [GFS2](https://aws.amazon.com/blogs/storage/clustered-storage-simplified-gfs2-on-amazon-ebs-multi-attach-enabled-volumes/) HA:
 
 1.  From [Amazon Console](console.aws.amazon.com):
-        1. **EC2 Dashboard** > **Instances** > *mcs1* > **Instance state** > **Start instance**
-        1. **EC2 Dashboard** > **Instances** > *mcs2* > **Instance state** > **Start instance**
-        1. **EC2 Dashboard** > **Instances** > *mcs3* > **Instance state** > **Start instance**
-        2. **Note:** *Public IPv4 DNS may have changed. Verify on the Networking tab.*
+    1. **EC2 Dashboard** > **Instances** > *mcs1* > **Instance state** > **Start instance**
+    1. **EC2 Dashboard** > **Instances** > *mcs2* > **Instance state** > **Start instance**
+    1. **EC2 Dashboard** > **Instances** > *mcs3* > **Instance state** > **Start instance**
+    1. **Note:** *Public IPv4 DNS may have changed. Verify on the Networking tab.*
 1.  `[root@mcs1 /]# pcs cluster start --all`
 1.  *Wait 30 seconds for the [pcs cluster](includes/sharing.yml) to start*
 1.  `[root@mcs1 /]# mcsStart`

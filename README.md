@@ -130,7 +130,7 @@ Complete cluster shutdown (Power Off) sequence with [GFS2](https://aws.amazon.co
 
 Complete cluster bootstrap (Power On) sequence with [GFS2](https://aws.amazon.com/blogs/storage/clustered-storage-simplified-gfs2-on-amazon-ebs-multi-attach-enabled-volumes/) HA:
 
-1.  From [Amazon Console](console.aws.amazon.com):
+1.  From [Amazon Console](https://console.aws.amazon.com):
     1. **EC2 Dashboard** > **Instances** > *mcs1* > **Instance state** > **Start instance**
     1. **EC2 Dashboard** > **Instances** > *mcs2* > **Instance state** > **Start instance**
     1. **EC2 Dashboard** > **Instances** > *mcs3* > **Instance state** > **Start instance**

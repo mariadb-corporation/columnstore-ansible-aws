@@ -136,5 +136,5 @@ Complete cluster bootstrap (Power On) sequence with [GFS2](https://aws.amazon.co
     1. **EC2 Dashboard** > **Instances** > *mcs3* > **Instance state** > **Start instance**
     1. **Note:** *Public IPv4 DNS may have changed. Verify on the Networking tab.*
 1.  `[root@mcs1 /]# pcs cluster start --all`
-1.  *Wait 30 seconds for the [pcs cluster](includes/sharing.yml) to start*
+1.  (*Wait 30 seconds for the [pcs cluster](includes/share.yml) to start*)
 1.  `[root@mcs1 /]# mcsStart`

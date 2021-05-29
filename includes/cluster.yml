@@ -54,7 +54,7 @@
       host: '{{ first_octet }}'
       password: '{{ maxscale_pass }}'
       update_password: on_create
-      priv: '*.*:SHOW DATABASES,BINLOG ADMIN,READ_ONLY ADMIN,RELOAD,REPLICATION MASTER ADMIN,REPLICATION SLAVE ADMIN,REPLICATION SLAVE/mysql.*:SELECT'
+      priv: '*.*:SHOW DATABASES,BINLOG ADMIN,READ_ONLY ADMIN,RELOAD,REPLICATION MASTER ADMIN,REPLICATION SLAVE ADMIN,REPLICATION SLAVE,SLAVE MONITOR/mysql.*:SELECT'
       state: present
       login_unix_socket: '{{ mariadb_socket }}'
     no_log: true
@@ -65,16 +65,10 @@
       host: '{{ first_octet }}'
       password: '{{ repli_pass }}'
       update_password: on_create
-      priv: '*.*:REPLICATION MASTER ADMIN,REPLICATION SLAVE ADMIN,REPLICATION SLAVE'
+      priv: '*.*:REPLICATION MASTER ADMIN,REPLICATION SLAVE ADMIN,REPLICATION SLAVE,SLAVE MONITOR'
       state: present
       login_unix_socket: '{{ mariadb_socket }}'
     no_log: true
-
-# Workaround: Ansible mysql_user module does not yet work with MariaDB 10.5.8 privileges
-  - name: "Adding Grant For '{{ maxscale_user }}'@'{{ first_octet }}'"
-    shell: |
-      mariadb -e "GRANT SLAVE MONITOR ON *.* TO '{{ maxscale_user }}'@'{{ first_octet }}';
-                  GRANT SLAVE MONITOR ON *.* TO '{{ repli_user }}'@'{{ first_octet }}';"
 
   - name: "Turn On Strict Password"
     mysql_variables:
@@ -119,6 +113,7 @@
       master_user: '{{ repli_user }}'
       master_password: '{{ repli_pass }}'
       login_unix_socket: '{{ mariadb_socket }}'
+    no_log: true
 
   - name: "Converting to MariaDB GTID"
     command: mysql -e "CHANGE MASTER TO master_use_gtid=slave_pos";

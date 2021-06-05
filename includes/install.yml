@@ -105,15 +105,6 @@
       state: started
       enabled: yes
 
-  - name: "Creating Improved columnstoreAlias.sh"
-    copy:
-      src: ../scripts/columnstoreAlias.sh
-      dest: /etc/profile.d/columnstoreAlias.sh
-      force: yes
-      owner: root
-      group: root
-      mode: '0644'
-
 - hosts: "maxscale"
   become: yes
   become_user: root

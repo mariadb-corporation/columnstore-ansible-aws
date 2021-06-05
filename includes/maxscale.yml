@@ -33,6 +33,7 @@
       - { resource: servers, name: mcs1 }
       - { resource: servers, name: mcs2 }
       - { resource: servers, name: mcs3 }
+    no_log: true
 
   - name: "Adding Cache Filter To MaxScale"
     uri:

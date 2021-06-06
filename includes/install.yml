@@ -69,7 +69,7 @@
         character_set_server = utf8
         collation_server = utf8_general_ci
         columnstore_use_import_for_batchinsert=ON
-        gtid_strict_mode = ON
+        #gtid_strict_mode = ON
         ignore_db_dirs = .pki
         log_bin = /var/log/mariadb/mariadb-bin
         log_bin_index = /var/log/mariadb/mariadb-bin.index

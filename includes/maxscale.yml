@@ -44,6 +44,7 @@
       user: admin
       password: mariadb
       status_code: 204
+    no_log: true
 
   - name: "Adding Servers To MaxScale"
     uri:
@@ -58,6 +59,7 @@
        - {"name": "mcs1", "host": "{{ mcs1_private }}"}
        - {"name": "mcs2", "host": "{{ mcs2_private }}"}
        - {"name": "mcs3", "host": "{{ mcs3_private }}"}
+    no_log: true
 
   - name: "Adding Monitor To MaxScale"
     uri:
@@ -68,6 +70,7 @@
       user: admin
       password: mariadb
       status_code: 204
+    no_log: true
 
   - name: "Adding Service To MaxScale"
     uri:
@@ -78,6 +81,7 @@
       user: admin
       password: mariadb
       status_code: 204
+    no_log: true
 
   - name: "Adding Listener To MaxScale"
     uri:
@@ -88,3 +92,4 @@
       user: admin
       password: mariadb
       status_code: 204
+    no_log: true

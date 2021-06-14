@@ -11,4 +11,3 @@ dwhs.sql
 hosts
 terraform.tfstate*
 variables.bak
-upgrade.yml

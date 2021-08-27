@@ -42,15 +42,72 @@
       - '{{ mariadb_columnstore }}'
       - '{{ mariadb_columnstore_cmapi }}'
 
-  - name: "Configuring Storagemanager"
-    template:
-      src: ../templates/storagemanager.cnf.j2
-      dest: /etc/columnstore/storagemanager.cnf
-      owner: mysql
-      group: mysql
+  - name: "Configuring Storagemanager Service"
+    replace:
+      path: '{{ storagemanager_cnf }}'
+      regexp: '^service =.*$'
+      replace: 'service = S3'
     when: use_s3 == true
 
-  - name: "Adjusting Bind Address"
+  - name: "Configuring Storagemanager Bucket"
+    replace:
+      path: '{{ storagemanager_cnf }}'
+      regexp: '^bucket =.*$'
+      replace: 'bucket = {{ s3_bucket }}'
+    when: use_s3 == true
+
+  - name: "Configuring Storagemanager Region"
+    replace:
+      path: '{{ storagemanager_cnf }}'
+      regexp: '^region =.*$'
+      replace: 'region = {{ aws_region }}'
+    when: use_s3 == true
+
+  - name: "Configuring Storagemanager Endpoint"
+    replace:
+      path: '{{ storagemanager_cnf }}'
+      regexp: '^# endpoint =.*$|^endpoint =.*$'
+      replace: 'endpoint = {{ s3_endpoint }}'
+    when: use_s3 == true
+
+  - name: "Configuring Storagemanger Port"
+    lineinfile:
+      path: '{{ storagemanager_cnf }}'
+      regexp: '^port_number =.*$'
+      insertafter: '^# endpoint =.*$|^endpoint =.*$'
+      line: 'port_number = {{ s3_port }}'
+      firstmatch: yes
+      state: present
+
+  - name: "Configuring Storagemanager Access ID"
+    replace:
+      path: '{{ storagemanager_cnf }}'
+      regexp: '^# aws_access_key_id =.*$|^aws_access_key_id =.*$'
+      replace: 'aws_access_key_id = {{ s3_access_key_id }}'
+    when: use_s3 == true
+
+  - name: "Configuring Storagemanager Access Secret"
+    replace:
+      path: '{{ storagemanager_cnf }}'
+      regexp: '^# aws_secret_access_key =.*$|^aws_secret_access_key =.*$'
+      replace: 'aws_secret_access_key = {{ s3_secret_access_key }}'
+    when: use_s3 == true
+
+  - name: "Configuring Storagemanager Transfer Protocol"
+    replace:
+      path: '{{ storagemanager_cnf }}'
+      regexp: '^# use_http =.*$|^use_http =.*$'
+      replace: 'use_http = enabled'
+    when: use_s3 == true and s3_use_http == true
+
+  - name: "Configuring Storagemanager SSL Verify"
+    replace:
+      path: '{{ storagemanager_cnf }}'
+      regexp: '^# ssl_verify =.*$|^ssl_verify =.*$'
+      replace: 'ssl_verify = disabled'
+    when: use_s3 == true and s3_ssl_disable == true
+
+  - name: "Configuring Bind Address"
     replace:
       path: '{{ server_cnf }}'
       regexp: '^bind-address'

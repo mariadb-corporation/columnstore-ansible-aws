@@ -17,7 +17,7 @@ jq: jq
 lvm2: lvm2-cluster
 mariadb_backup: MariaDB-backup
 mariadb_client: MariaDB-client
-mariadb_columnstore_cmapi: mariadb-columnstore-cmapi
+mariadb_columnstore_cmapi: MariaDB-columnstore-cmapi
 mariadb_columnstore: MariaDB-columnstore-engine
 mariadb_libs: mariadb-libs
 mariadb_repo: /etc/yum.repos.d/mariadb.repo
@@ -34,6 +34,7 @@ python_dev: python-devel
 python_mysql: python2-PyMySQL,python3-PyMySQL
 python_requests: python3-requests
 server_cnf: /etc/my.cnf.d/server.cnf
+storagemanager_cnf: /etc/columnstore/storagemanager.cnf
 tar: tar
 unzip: unzip
 version: 7

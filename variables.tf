@@ -57,6 +57,16 @@ variable "use_s3" {
   default = true
 }
 
+variable "s3_ssl_disable" {
+  type    = bool
+  default = false
+}
+
+variable "s3_use_http" {
+  type    = bool
+  default = false
+}
+
 variable "prometheus_exporter" {
   type    = bool
   default = false
@@ -113,12 +123,12 @@ variable "cej_pass" {
 
 variable "mariadb_version" {
   type    = string
-  default = "10.5"
+  default = "10.6"
 }
 
 variable "maxscale_version" {
   type    = string
-  default = "2.5"
+  default = "6.1"
 }
 
 variable "reboot" {

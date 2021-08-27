@@ -1,6 +1,6 @@
 ![logo](https://raw.githubusercontent.com/mariadb-corporation/mariadb-community-columnstore-docker/master/MDB-HLogo_RGB.jpg)
 
-### MariaDB Enterprise 10.5 / ColumnStore 5.6 Cluster / CMAPI 1.4
+### MariaDB Enterprise 10.6 / ColumnStore 6.1 Cluster / CMAPI 1.5
 ![diagram](images/architecture.png)
 #### About:
 

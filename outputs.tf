@@ -46,6 +46,8 @@ resource "local_file" "AnsibleVariables" {
       repli_user               = var.repli_user,
       s3_bucket                = aws_s3_bucket.s3_bucket[0].id,
       s3_domain                = var.s3_domain,
+      s3_ssl_disable           = var.s3_ssl_disable,
+      s3_use_http              = var.s3_use_http,
       use_awscli               = var.use_awscli,
       use_ha                   = var.use_ha,
       use_prometheus           = var.prometheus_exporter,

@@ -14,7 +14,7 @@ jq: jq
 lvm2: lvm2-lockd
 mariadb_backup: MariaDB-backup
 mariadb_client: MariaDB-client
-mariadb_columnstore_cmapi: mariadb-columnstore-cmapi
+mariadb_columnstore_cmapi: MariaDB-columnstore-cmapi
 mariadb_columnstore: MariaDB-columnstore-engine
 mariadb_libs: mariadb-libs
 mariadb_repo: /etc/yum.repos.d/mariadb.repo

@@ -1,5 +1,6 @@
 ---
 
+awscli: awscli
 boto: python3-boto3
 columnstore_cnf: /etc/mysql/mariadb.conf.d/columnstore.cnf
 gcc: gcc
@@ -24,6 +25,8 @@ pre_task: apt autoremove --purge && apt clean && apt -y install python3
 python_mysql: python3-mysqldb
 python_requests: python3-requests
 server_cnf: /etc/mysql/mariadb.conf.d/50-server.cnf
+storagemanager_cnf: /etc/columnstore/storagemanager.cnf
 tar: tar
 unzip: unzip
+user: mariadb
 wget: wget

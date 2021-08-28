@@ -37,6 +37,6 @@ server_cnf: /etc/my.cnf.d/server.cnf
 storagemanager_cnf: /etc/columnstore/storagemanager.cnf
 tar: tar
 unzip: unzip
-user: centos
+user: mariadb
 version: 7
 wget: wget

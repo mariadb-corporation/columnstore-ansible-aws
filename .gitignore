@@ -3,12 +3,13 @@
 .variables.tf
 adduser.yml
 all.yml
+ansible.cfg
 build_tests.yml
 crash.log
 create.sh
 destroy.sh
 dwhs.sql
 hosts
+migrate.sh
 terraform.tfstate*
 variables.bak
-migrate.sh

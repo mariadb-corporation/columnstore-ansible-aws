@@ -28,15 +28,11 @@ resource "local_file" "AnsibleVariables" {
       cej_pass                 = var.cej_pass,
       cej_user                 = var.cej_user,
       cmapi_key                = var.cmapi_key
-      elasticache_endpoint     = aws_elasticache_cluster.mcscache.cache_nodes.0.address,
-      elasticache_engine       = var.elasticache_engine,
-      elasticache_port         = var.elasticache_port,
       mariadb_enterprise_token = var.mariadb_enterprise_token,
       mariadb_version          = var.mariadb_version,
       maxscale_pass            = var.maxscale_pass,
       maxscale_user            = var.maxscale_user,
       maxscale_version         = var.maxscale_version,
-      pcs_pass                 = var.pcs_pass,
       privateip1               = aws_instance.mcs1.private_ip,
       privateip2               = aws_instance.mcs2.private_ip,
       privateip3               = aws_instance.mcs3.private_ip,
@@ -49,8 +45,6 @@ resource "local_file" "AnsibleVariables" {
       s3_ssl_disable           = var.s3_ssl_disable,
       s3_use_http              = var.s3_use_http,
       use_awscli               = var.use_awscli,
-      use_ha                   = var.use_ha,
-      use_prometheus           = var.prometheus_exporter,
       use_s3                   = var.use_s3,
     }
   )

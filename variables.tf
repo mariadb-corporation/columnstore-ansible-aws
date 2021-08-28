@@ -42,11 +42,6 @@ variable "cmapi_key" {
   default = "CREATE A COLUMNSTORE API KEY HERE"
 }
 
-variable "pcs_pass" {
-  type    = string
-  default = "SET YOUR METADATA PCS CLUSTER PASSWORD HERE"
-}
-
 variable "use_awscli" {
   type    = bool
   default = true
@@ -65,16 +60,6 @@ variable "s3_ssl_disable" {
 variable "s3_use_http" {
   type    = bool
   default = false
-}
-
-variable "prometheus_exporter" {
-  type    = bool
-  default = false
-}
-
-variable "use_ha" {
-  type    = bool
-  default = true
 }
 
 #### DATABASE CREDENTIALS
@@ -148,12 +133,11 @@ variable "aws_zone" {
 
 variable "aws_ami" {
   type    = string
-  default = "ami-0a4497cbe959da512"
+  default = "ami-0e3654b38a33c9ca5"
 }
 
 # "ami-0a4497cbe959da512" (centos 7)
-# "ami-0c9ff37f7a65a36a2" (centos 8)
-# "ami-0ddc70e50205f89b6" (centos stream 8)
+# "ami-0e3654b38a33c9ca5" (rocky 8)
 # "ami-0ac73f33a1888c64a" (ubuntu 18)
 # "ami-07dd19a7900a1f049" (ubuntu 20)
 
@@ -170,14 +154,4 @@ variable "aws_maxscale_instance_size" {
 variable "s3_domain" {
   type    = string
   default = "amazonaws.com"
-}
-
-variable "elasticache_engine" {
-  type    = string
-  default = "redis"
-}
-
-variable "elasticache_port" {
-  type    = string
-  default = "6379"
 }

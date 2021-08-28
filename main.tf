@@ -40,14 +40,6 @@ resource "aws_security_group" "mcs_traffic" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  ingress {
-    description = "Prometheus Exporter"
-    from_port   = 9100
-    to_port     = 9100
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
   egress {
     from_port   = 0
     to_port     = 0
@@ -144,34 +136,4 @@ resource "aws_ebs_volume" "metadata" {
   multi_attach_enabled = true
   size                 = 100
   type                 = "io1"
-}
-
-resource "aws_volume_attachment" "metadata_mount1" {
-  device_name = "/dev/sdh"
-  volume_id   = aws_ebs_volume.metadata.id
-  instance_id = aws_instance.mcs1.id
-}
-
-resource "aws_volume_attachment" "metadata_mount2" {
-  device_name = "/dev/sdh"
-  volume_id   = aws_ebs_volume.metadata.id
-  instance_id = aws_instance.mcs2.id
-}
-
-resource "aws_volume_attachment" "metadata_mount3" {
-  device_name = "/dev/sdh"
-  volume_id   = aws_ebs_volume.metadata.id
-  instance_id = aws_instance.mcs3.id
-}
-
-resource "aws_elasticache_cluster" "mcscache" {
-  cluster_id           = "mcscache"
-  engine               = var.elasticache_engine
-  node_type            = "cache.r6g.large"
-  num_cache_nodes      = 1
-  parameter_group_name = "default.redis5.0"
-  engine_version       = "5.0.6"
-  port                 = var.elasticache_port
-  availability_zone    = var.aws_zone
-  security_group_ids   = [aws_security_group.mcs_traffic.id]
 }

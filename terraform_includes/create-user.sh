@@ -2,6 +2,7 @@
 
 USERNAME=mariadb
 GROUPNAME=mariadb
+ROCKY=/home/rocky
 CENTOS=/home/centos
 UBUNTU=/home/ubuntu
 NEW=/home/$USERNAME
@@ -13,6 +14,10 @@ sudo groupadd $GROUPNAME &> /dev/null
 sudo usermod -a -G $GROUPNAME $USERNAME
 sudo mkdir -p "$NEW/.ssh"
 sudo chown -R $USERNAME:$GROUPNAME $NEW
+
+if [ -d "$ROCKY" ]; then
+    sudo cp $ROCKY/$KEYS $NEW/$KEYS
+fi
 
 if [ -d "$CENTOS" ]; then
     sudo cp $CENTOS/$KEYS $NEW/$KEYS

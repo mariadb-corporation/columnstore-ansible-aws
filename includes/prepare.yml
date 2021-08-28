@@ -15,7 +15,8 @@
     selinux:
       policy: targeted
       state: permissive
-    when: ansible_distribution|lower == 'centos'
+    when: (ansible_distribution|lower == 'centos') or
+          (ansible_distribution|lower == 'rocky')
 
   - name: "Disabling firewalld"
     systemd:

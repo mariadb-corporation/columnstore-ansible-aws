@@ -1,16 +1,14 @@
 ![logo](https://raw.githubusercontent.com/mariadb-corporation/mariadb-community-columnstore-docker/master/MDB-HLogo_RGB.jpg)
 
 ### MariaDB Enterprise 10.6 / ColumnStore 6.1 Cluster / CMAPI 1.5
-![diagram](images/architecture.png)
+
 #### About:
 
 This is a [Terraform](https://www.terraform.io/) and [Ansible](https://www.ansible.com/) project to provision a **high availability** [MariaDB ColumnStore](https://mariadb.com/docs/features/mariadb-enterprise-columnstore/#mariadb-enterprise-columnstore) deployment on [Amazon Web Services](https://aws.amazon.com/). This automation project will create the following system:
 
 *   3 **MariaDB** Nodes For Durability & Performance
-*   1 **GFS2** [Multi-Attach](https://aws.amazon.com/blogs/storage/clustered-storage-simplified-gfs2-on-amazon-ebs-multi-attach-enabled-volumes/) **io1** EBS Volume (Metadata)
 *   1 **S3** Bucket For Object Storage (Data)
 *   2 **MaxScale** Nodes For High Availability
-*   1 **Elasticache** Instance For Query Performance (Redis)
 
 #### Prerequisites:
 
@@ -117,24 +115,3 @@ curl -s -X PUT https://127.0.0.1:8640/cmapi/0.4.0/cluster/mode-set --header 'Con
 #### Clean Up
 
 *   `terraform destroy --auto-approve`
-
-#### Special Notes
-
-Complete cluster shutdown (Power Off) sequence with [GFS2](https://aws.amazon.com/blogs/storage/clustered-storage-simplified-gfs2-on-amazon-ebs-multi-attach-enabled-volumes/) HA:
-
-1.  `[root@mcs1 /]# mcsShutdown`
-1.  `[root@mcs1 /]# pcs cluster stop --all`
-1.  `[root@mcs3 /]# shutdown -h now`
-1.  `[root@mcs2 /]# shutdown -h now`
-1.  `[root@mcs1 /]# shutdown -h now`
-
-Complete cluster bootstrap (Power On) sequence with [GFS2](https://aws.amazon.com/blogs/storage/clustered-storage-simplified-gfs2-on-amazon-ebs-multi-attach-enabled-volumes/) HA:
-
-1.  From [Amazon Console](https://console.aws.amazon.com):
-    1. **EC2 Dashboard** > **Instances** > *mcs1* > **Instance state** > **Start instance**
-    1. **EC2 Dashboard** > **Instances** > *mcs2* > **Instance state** > **Start instance**
-    1. **EC2 Dashboard** > **Instances** > *mcs3* > **Instance state** > **Start instance**
-    1. **Note:** *Public IPv4 DNS may have changed. Verify on the Networking tab.*
-1.  `[root@mcs1 /]# pcs cluster start --all`
-1.  (*Wait 30 seconds for the [pcs cluster](includes/share.yml) to start*)
-1.  `[root@mcs1 /]# mcsStart`

@@ -17,13 +17,13 @@
 
   - name: "Creating .aws Folder"
     ansible.builtin.file:
-      path: /home/mariadb/.aws
+      path: /home/{{ user }}/.aws
       state: directory
 
   - name: "Creating 'awscli' Credentials File"
     template:
       src: ../templates/config.j2
-      dest: /home/mariadb/.aws/config
+      dest: /home/{{ user }}/.aws/config
       owner: mariadb
       group: mariadb
       mode: 0600
@@ -31,7 +31,7 @@
   - name: "Creating 'awscli' Configuration File"
     template:
       src: ../templates/credentials.j2
-      dest: /home/mariadb/.aws/credentials
+      dest: /home/{{ user }}/.aws/credentials
       owner: mariadb
       group: mariadb
       mode: 0600

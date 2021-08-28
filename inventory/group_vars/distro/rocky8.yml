@@ -1,5 +1,6 @@
 ---
 
+awscli: awscli
 boto: python3-boto3
 columnstore_cnf: /etc/my.cnf.d/columnstore.cnf
 dlm: https://repo.cloudlinux.com/cloudlinux/8.3/BaseOS/x86_64/os/Packages/dlm-4.0.9-3.el8.x86_64.rpm
@@ -31,7 +32,9 @@ python_dev: platform-python-devel
 python_mysql: python2-PyMySQL,python3-PyMySQL
 python_requests: python3-requests
 server_cnf: /etc/my.cnf.d/server.cnf
+storagemanager_cnf: /etc/columnstore/storagemanager.cnf
 tar: tar
 unzip: unzip
+user: rocky
 version: 8
 wget: wget

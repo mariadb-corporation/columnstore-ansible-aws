@@ -62,9 +62,6 @@
       - '{{ nano }}'
       - '{{ python_dev }}'
       - '{{ python_mysql }}'
-      - '{{ python_requests }}'
-      - '{{ tar }}'
-      - '{{ unzip }}'
       - '{{ wget }}'
 
 - hosts: "primary,replicas"

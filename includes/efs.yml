@@ -15,6 +15,19 @@
     with_items:
       - '{{ awscli }}'
 
+  - name: "Creating Metadata Folder"
+    file:
+      path:  /var/lib/columnstore/storagemanager
+      state: directory
+
+  - name: "Mounting Metadata Folder"
+    mount:
+      path: /var/lib/columnstore/storagemanager
+      src: '{{ aws_efs }}.efs.us-west-2.amazonaws.com:/'
+      fstype: nfs4
+      opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport
+      state: mounted
+
   - name: "Creating .aws Folder"
     ansible.builtin.file:
       path: /home/{{ user }}/.aws

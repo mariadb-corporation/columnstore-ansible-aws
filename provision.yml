@@ -29,9 +29,9 @@
 - name: "Preparing The Servers"
   import_playbook: includes/prepare.yml
 
-- name: "Installing AWS Tools"
-  import_playbook: includes/aws.yml
-  when: use_awscli == true
+#- name: "Configuring EFS Mount"
+#  import_playbook: includes/efs.yml
+#  when: use_efs == true
 
 - name: "Installing MariaDB"
   import_playbook: includes/install.yml

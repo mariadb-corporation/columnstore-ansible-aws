@@ -130,10 +130,17 @@ resource "aws_s3_bucket" "s3_bucket" {
   }
 }
 
-resource "aws_ebs_volume" "metadata" {
-  availability_zone    = var.aws_zone
-  iops                 = 3000
-  multi_attach_enabled = true
-  size                 = 100
-  type                 = "io1"
-}
+#resource "aws_efs_file_system" "metadata" {
+#  performance_mode                = "maxIO"
+#  throughput_mode                 = "provisioned"
+#  provisioned_throughput_in_mibps = 1024
+#  tags = {
+#    Name = "mcs-metadata"
+#  }
+#}
+#
+#resource "aws_efs_mount_target" "metadata" {
+#  file_system_id  = aws_efs_file_system.metadata.id
+#  subnet_id       = var.aws_subnet
+#  security_groups = [aws_security_group.mcs_traffic.id]
+#}

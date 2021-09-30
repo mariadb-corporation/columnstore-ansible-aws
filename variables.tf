@@ -37,12 +37,17 @@ variable "aws_vpc" {
   default = "YOUR AWS VPC ID HERE"
 }
 
+variable "aws_subnet" {
+  type    = string
+  default = "YOUR AWS SUBNET ID HERE"
+}
+
 variable "cmapi_key" {
   type    = string
   default = "CREATE A COLUMNSTORE API KEY HERE"
 }
 
-variable "use_awscli" {
+variable "use_efs" {
   type    = bool
   default = true
 }
@@ -135,11 +140,6 @@ variable "aws_ami" {
   type    = string
   default = "ami-0e3654b38a33c9ca5"
 }
-
-# "ami-0a4497cbe959da512" (centos 7)
-# "ami-0e3654b38a33c9ca5" (rocky 8)
-# "ami-0ac73f33a1888c64a" (ubuntu 18)
-# "ami-07dd19a7900a1f049" (ubuntu 20)
 
 variable "aws_mariadb_instance_size" {
   type    = string

@@ -13,7 +13,7 @@
       src: ../templates/maxscale.cnf.j2
       dest: /etc/maxscale.cnf
 
-  - name: "Restart MaxScale"
+  - name: "Restarting MaxScale"
     systemd:
       state: restarted
       name: maxscale

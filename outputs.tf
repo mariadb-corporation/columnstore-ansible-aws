@@ -44,8 +44,9 @@ resource "local_file" "AnsibleVariables" {
       s3_domain                = var.s3_domain,
       s3_ssl_disable           = var.s3_ssl_disable,
       s3_use_http              = var.s3_use_http,
-      use_awscli               = var.use_awscli,
+      use_efs                  = var.use_efs,
       use_s3                   = var.use_s3,
+      #efs_id                  = aws_efs_file_system.metadata.id,
     }
   )
   filename = "inventory/group_vars/all.yml"

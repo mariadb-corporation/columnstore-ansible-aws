@@ -1,6 +1,6 @@
-CREATE OR REPLACE DATABASE `cs_validation`;
+CREATE DATABASE IF NOT EXISTS `cs_validation`;
 
-CREATE TABLE `cs_validation`.`mock_data` (
+CREATE TABLE IF NOT EXISTS `cs_validation`.`mock_data` (
     `id` INT,
     `first_name` VARCHAR(50),
     `last_name` VARCHAR(50),

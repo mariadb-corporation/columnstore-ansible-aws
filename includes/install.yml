@@ -40,7 +40,6 @@
       - '{{ mariadb_client }}'
       - '{{ mariadb_server }}'
       - '{{ mariadb_columnstore }}'
-      - '{{ mariadb_columnstore_cmapi }}'
 
   - name: "Configuring Storagemanager Service"
     replace:
@@ -155,6 +154,14 @@
       name: mariadb-columnstore
       state: restarted
       enabled: no
+
+  - name: "Installing CMAPI Server"
+    package:
+      name: '{{ item }}'
+      state: present
+      update_cache: yes
+    with_items:
+      - '{{ mariadb_columnstore_cmapi }}'
 
   - name: "Enabling CMAPI Server"
     systemd:

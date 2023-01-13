@@ -1,0 +1,44 @@
+---
+
+# Project Components
+use_s3: ${use_s3}
+
+# AWS Configuration
+aws_region: ${aws_region}
+aws_zone: ${aws_zone}
+
+# Storage Manager Configuration
+s3_access_key_id: ${aws_access_key}
+s3_secret_access_key: ${aws_secret_key}
+s3_endpoint: s3.${aws_region}.${s3_domain}
+s3_bucket: ${s3_bucket}
+s3_use_http: ${s3_use_http}
+s3_ssl_disable: ${s3_ssl_disable}
+s3_port:
+
+# Version Configuration
+mariadb_version: ${mariadb_version}
+maxscale_version: ${maxscale_version}
+
+# MariaDB Enterprise Token
+enterprise_token: ${mariadb_enterprise_token}
+
+# Columnstore Settings
+api_key: ${cmapi_key}
+
+# Database Credentials
+admin_user: ${admin_user}
+admin_pass: ${admin_pass}
+cej_user: ${cej_user}
+cej_pass: ${cej_pass}
+maxscale_user: ${maxscale_user}
+maxscale_pass: ${maxscale_pass}
+repli_user: ${repli_user}
+repli_pass: ${repli_pass}
+
+# Private IPs
+mcs1_private: ${privateip1}
+mcs2_private: ${privateip2}
+mcs3_private: ${privateip3}
+mx1_private: ${privateip4}
+mx2_private: ${privateip5}

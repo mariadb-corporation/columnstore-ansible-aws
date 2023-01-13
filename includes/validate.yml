@@ -1,0 +1,59 @@
+---
+
+- hosts: "primary"
+  become: yes
+  become_user: root
+  vars_files:
+    - '../inventory/group_vars/distro/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}.yml'
+
+  tasks:
+
+  - name: "Copying Sample Data File To Server"
+    copy:
+      src: ../scripts/cs_validation.sql
+      dest: /tmp/cs_validation.sql
+      mode: '0644'
+
+  - name: "Creating Sample Table"
+    mysql_db:
+      name: all
+      state: import
+      target: /tmp/cs_validation.sql
+      login_unix_socket: '{{ mariadb_socket }}'
+    no_log: true
+
+  - name: "Cleaning Up Sample Data File"
+    file:
+      path: /tmp/cs_validation.sql
+      state: absent
+
+- hosts: "replicas"
+  become: yes
+  become_user: root
+  vars_files:
+    - '../inventory/group_vars/distro/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}.yml'
+
+  tasks:
+
+  - name: "Validating Cluster"
+    shell: mariadb -sN -e "SELECT id FROM cs_validation.mock_data ORDER BY id DESC LIMIT 1;"
+    register: mariadb_result
+
+  - name: "Validation Has Failed!"
+    command: /bin/false
+    when: mariadb_result.stdout != '10'
+
+- hosts: "primary"
+  become: yes
+  become_user: root
+  vars_files:
+    - '../inventory/group_vars/distro/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}.yml'
+
+  tasks:
+
+  - name: "Cleaning Up After Validation"
+    mysql_db:
+      name: cs_validation
+      state: absent
+      login_unix_socket: '{{ mariadb_socket }}'
+    no_log: true

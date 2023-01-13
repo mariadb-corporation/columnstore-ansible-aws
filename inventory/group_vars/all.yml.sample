@@ -1,0 +1,45 @@
+---
+
+# Project Components
+use_awscli: false
+use_s3: false
+
+# AWS Configuration
+aws_region: us-west-2
+aws_zone: us-west-2a
+
+# Storage Manager Configuration
+s3_access_key_id:
+s3_secret_access_key:
+s3_endpoint:
+s3_bucket:
+s3_use_http: false
+s3_ssl_disable: false
+s3_port:
+
+# Version Configuration
+mariadb_version: 10.6
+maxscale_version: 6.1
+
+# MariaDB Enterprise Token
+enterprise_token: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+
+# Columnstore Settings
+api_key: somekey123
+
+# Database Credentials
+admin_user: admin
+admin_pass: C0lumnStore!
+cej_user: cejuser
+cej_pass: C0lumnStore!
+maxscale_user: maxuser
+maxscale_pass: C0lumnStore!
+repli_user: repliuser
+repli_pass: C0lumnStore!
+
+# Private IPs
+mcs1_private: x.x.x.x
+mcs2_private: x.x.x.x
+mcs3_private: x.x.x.x
+mx1_private: x.x.x.x
+mx2_private: x.x.x.x

@@ -1,0 +1,42 @@
+---
+
+## Wait For Servers To Boot
+
+- hosts: "primary,replicas,maxscale"
+  become: yes
+  become_user: root
+  gather_facts: no
+
+  tasks:
+    - name: "Waiting For Servers To Initialize"
+      wait_for_connection:
+
+## Bootstrap For Ansible
+
+- hosts: "primary,replicas,maxscale"
+  become: yes
+  become_user: root
+  gather_facts: yes
+  vars_files:
+    - 'inventory/group_vars/distro/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}.yml'
+
+  pre_tasks:
+    - name: "Bootstrapping System For Ansible"
+      raw: '{{ pre_task }}'
+
+## Include Sub Playbooks
+
+- name: "Preparing The Servers"
+  import_playbook: includes/prepare.yml
+
+- name: "Installing MariaDB"
+  import_playbook: includes/install.yml
+
+- name: "Setting Up Cluster"
+  import_playbook: includes/cluster.yml
+
+- name: "Validating Installation"
+  import_playbook: includes/validate.yml
+
+- name: "Configuring MaxScale"
+  import_playbook: includes/maxscale.yml

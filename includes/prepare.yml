@@ -1,38 +1,5 @@
 ---
 
-- hosts: "primary"
-  become: yes
-  become_user: root
-  vars_files:
-    - '../inventory/group_vars/distro/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}.yml'
-
-  tasks:
-
-  - name: "Creating Filesystem On Shared Metadata Volume"
-    filesystem:
-      fstype: ext4
-      dev: /dev/nvme1n1
-
-- hosts: "primary,replicas"
-  become: yes
-  become_user: root
-  vars_files:
-    - '../inventory/group_vars/distro/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}.yml'
-
-  tasks:
-
-  - name: "Creating Shared Metadata Volume Mount Point"
-    file:
-      path: /var/lib/columnstore/storagemanager
-      state: directory
-
-  - name: "Mounting Shared Metadata Volume"
-    mount:
-      path: /var/lib/columnstore/storagemanager
-      src: /dev/nvme1n1
-      fstype: ext4
-      state: mounted
-
 - hosts: "primary,replicas,maxscale"
   become: yes
   become_user: root

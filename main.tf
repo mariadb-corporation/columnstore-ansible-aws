@@ -54,9 +54,11 @@ resource "aws_security_group" "mcs_traffic" {
 
 resource "aws_instance" "mcs1" {
   ami               = var.aws_ami
+  subnet_id         = var.aws_subnet
   availability_zone = var.aws_zone
   instance_type     = var.aws_mariadb_instance_size
   key_name          = var.key_pair_name
+  private_ip        = "172.31.15.251"
   root_block_device {
     volume_size = 100
   }
@@ -69,9 +71,11 @@ resource "aws_instance" "mcs1" {
 
 resource "aws_instance" "mcs2" {
   ami               = var.aws_ami
+  subnet_id         = var.aws_subnet
   availability_zone = var.aws_zone
   instance_type     = var.aws_mariadb_instance_size
   key_name          = var.key_pair_name
+  private_ip        = "172.31.15.252"
   root_block_device {
     volume_size = 100
   }
@@ -82,26 +86,12 @@ resource "aws_instance" "mcs2" {
   }
 }
 
-resource "aws_instance" "mcs3" {
-  ami               = var.aws_ami
-  availability_zone = var.aws_zone
-  instance_type     = var.aws_mariadb_instance_size
-  key_name          = var.key_pair_name
-  root_block_device {
-    volume_size = 100
-  }
-  user_data              = file("terraform_includes/create_user.sh")
-  vpc_security_group_ids = [aws_security_group.mcs_traffic.id]
-  tags = {
-    Name = "mcs3"
-  }
-}
-
 resource "aws_instance" "mx1" {
   ami                    = var.aws_ami
   availability_zone      = var.aws_zone
   instance_type          = var.aws_maxscale_instance_size
   key_name               = var.key_pair_name
+  private_ip        = "172.31.15.253"
   root_block_device {
     volume_size = 40
   }
@@ -117,6 +107,7 @@ resource "aws_instance" "mx2" {
   availability_zone      = var.aws_zone
   instance_type          = var.aws_maxscale_instance_size
   key_name               = var.key_pair_name
+  private_ip        = "172.31.15.254"
   root_block_device {
     volume_size = 40
   }
@@ -140,7 +131,7 @@ resource "aws_ebs_volume" "storagemanager" {
   availability_zone       = var.aws_zone
   size                    = 100
   multi_attach_enabled    = true
-  type                    = "io1"
+  type                    = "io2"
   iops                    = 3000
   tags = {
     Name = "mcs-metadata"
@@ -157,10 +148,4 @@ resource "aws_volume_attachment" "ebs_mcs_2" {
   device_name = "/dev/sdf"
   volume_id   = aws_ebs_volume.storagemanager.id
   instance_id = aws_instance.mcs2.id
-}
-
-resource "aws_volume_attachment" "ebs_mcs_3" {
-  device_name = "/dev/sdf"
-  volume_id   = aws_ebs_volume.storagemanager.id
-  instance_id = aws_instance.mcs3.id
 }

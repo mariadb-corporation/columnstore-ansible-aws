@@ -1,12 +1,10 @@
 mcs1 ansible_host=mcs1.mydomain.com
 mcs2 ansible_host=mcs2.mydomain.com
-mcs3 ansible_host=mcs3.mydomain.com
 mx1 ansible_host=mx1.mydomain.com
 mx2 ansible_host=mx2.mydomain.com
 
 mcs1_private ansible_host=mcs1.internal
 mcs2_private ansible_host=mcs2.internal
-mcs3_private ansible_host=mcs3.internal
 mx1_private ansible_host=mx1.internal
 mx2_private ansible_host=mx2.internal
 
@@ -15,7 +13,6 @@ mcs1
 
 [replicas]
 mcs2
-mcs3
 
 [maxscale]
 mx1

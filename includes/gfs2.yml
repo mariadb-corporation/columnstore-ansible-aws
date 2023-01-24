@@ -1,0 +1,128 @@
+---
+
+- hosts: "mcs1,mcs2"
+  name: "Installing Software"
+  become: true
+  become_user: root
+  gather_facts: false
+  vars_files:
+    - '../inventory/group_vars/distro/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}.yml'
+
+  tasks:
+
+    - name: "Adding Mappings To /etc/hosts"
+      ansible.builtin.blockinfile:
+        path: /etc/hosts
+        block: |
+          {{ mcs1_private }} mcs1
+          {{ mcs2_private }} mcs2
+
+    - name: "Installing PCS Items"
+      ansible.builtin.package:
+        name: '{{ item }}'
+        state: present
+      with_items:
+        - fence-agents-aws
+        - gfs2-utils
+        - lvm2-cluster
+        - pcs
+
+    - name: "Creating Shared Folder"
+      ansible.builtin.file:
+        path: /var/lib/columnstore/storagemanager
+        state: directory
+        mode: '0755'
+
+    - name: "Starting PCS Daemon"
+      ansible.builtin.systemd:
+        state: started
+        name: pcsd
+        enabled: true
+
+    - name: "Set PCS User Password"
+      ansible.builtin.user:
+        name: hacluster
+        state: present
+        password: "{{ pcs_pass | password_hash('sha512') }}"
+
+- hosts: "mcs1"
+  name: "Setting Up Cluster"
+  become: true
+  become_user: root
+  vars_files:
+    - '../inventory/group_vars/distro/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}.yml'
+
+  tasks:
+
+    - name: "Authorizing PCS Nodes"
+      ansible.builtin.command: pcs cluster auth mcs1 mcs2 -u hacluster -p {{ pcs_pass }} 
+
+    - name: "Setting Up PCS Cluster"
+      ansible.builtin.command: pcs cluster setup --name hacluster mcs1 mcs2
+
+    - name: "Starting PCS Cluster"
+      ansible.builtin.command: pcs cluster start --all
+
+    - name: "Setting Up Fencing"
+      ansible.builtin.command: pcs stonith create clusterfence fence_aws access_key={{ s3_access_key_id }} secret_key={{ s3_secret_access_key }} region={{ aws_region }} pcmk_host_map="mcs1:{{ mcs1_id }};mcs2:{{ mcs2_id }}" power_timeout=240 pcmk_reboot_timeout=480 pcmk_reboot_retries=4
+
+    - name: "Setting 'No Quorum' Policy"
+      ansible.builtin.command: pcs property set no-quorum-policy=freeze
+
+    - name: "Creating 'controld' Resource"
+      ansible.builtin.command: pcs resource create dlm ocf:pacemaker:controld op monitor interval=30s on-fail=fence clone interleave=true ordered=true
+
+- hosts: "mcs1,mcs2"
+  name: "Starting Locks"
+  become: true
+  become_user: root
+  vars_files:
+    - '../inventory/group_vars/distro/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}.yml'
+
+  tasks:
+
+  - name: "Enabling Locking"
+    ansible.builtin.command: /sbin/lvmconf --enable-cluster
+
+- hosts: "mcs1"
+  name: "Setting Up Shared Volume"
+  become: true
+  become_user: root
+  vars_files:
+    - '../inventory/group_vars/distro/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}.yml'
+
+  tasks:
+
+    - name: "Creating 'clvmd' Resource"
+      ansible.builtin.command: pcs resource create clvmd ocf:heartbeat:clvm op monitor interval=30s on-fail=fence clone interleave=true ordered=true
+
+    - name: "Creating First Constraint"
+      ansible.builtin.command: pcs constraint order start dlm-clone then clvmd-clone
+
+    - name: "Creating Second Constraint"
+      ansible.builtin.command: pcs constraint colocation add clvmd-clone with dlm-clone
+
+    - name: "Creating Physical Volume"
+      ansible.builtin.command: pvcreate /dev/nvme1n1
+
+    - name: "Creating Volume Group"
+      ansible.builtin.command: vgcreate -Ay -cy clustervg /dev/nvme1n1
+
+    - name: "Pause"
+      pause:
+        seconds: 60
+
+    - name: "Creating Logical Volume"
+      ansible.builtin.command: lvcreate -L99G -n clusterlv clustervg
+
+    - name: "Formatting Logical Volume With GFS2"
+      ansible.builtin.command: mkfs.gfs2 -O -j2 -p lock_dlm -t hacluster:storagemanager /dev/clustervg/clusterlv
+
+    - name: "Creating Cluster File System"
+      ansible.builtin.command: pcs resource create clusterfs Filesystem device="/dev/clustervg/clusterlv" directory="/var/lib/columnstore/storagemanager" fstype="gfs2" options="noatime" op monitor interval=10s on-fail=fence clone interleave=true
+
+    - name: "Setting Starting Order Part 1"
+      ansible.builtin.command: pcs constraint order start clvmd-clone then clusterfs-clone
+
+    - name: "Setting Starting Order Part 2"
+      ansible.builtin.command: pcs constraint colocation add clusterfs-clone with clvmd-clone

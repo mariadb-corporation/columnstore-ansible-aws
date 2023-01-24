@@ -29,10 +29,13 @@
 - name: "Preparing The Servers"
   import_playbook: includes/prepare.yml
 
+- name: "Setting Up GFS2"
+  import_playbook: includes/gfs2.yml
+
 - name: "Installing MariaDB"
   import_playbook: includes/install.yml
 
-- name: "Setting Up Cluster"
+- name: "Setting Up ColumnStore Cluster"
   import_playbook: includes/cluster.yml
 
 - name: "Validating Installation"

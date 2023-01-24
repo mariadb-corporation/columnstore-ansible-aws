@@ -37,7 +37,7 @@ Further information can be found on our [official deployment guide](https://mari
 ##### Current Approved AWS Image(s)
 AMI OS|AMI ID|Region|Zone|
 ---|---|---|---|
-Rocky8|ami-0e3654b38a33c9ca5|us-west-2|us-west-2a|
+CentOS 7|ami-0bc06212a56393ee1|us-west-2|us-west-2c|
 
 #### Cluster Manipulation Tools
 

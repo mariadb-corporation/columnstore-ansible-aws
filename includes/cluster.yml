@@ -147,4 +147,3 @@
     loop:
         - {"timeout":180, "node":"{{ hostvars.mcs1_private.ansible_host }}"}
         - {"timeout":180, "node":"{{ hostvars.mcs2_private.ansible_host }}"}
-        - {"timeout":180, "node":"{{ hostvars.mcs3_private.ansible_host }}"}

@@ -62,6 +62,11 @@ variable "s3_use_http" {
   default = false
 }
 
+variable "pcs_pass" {
+  type    = string
+  default = "SET PCS CLUSTER PASSWORD HERE"
+}
+
 #### DATABASE CREDENTIALS
 
 variable "admin_user" {
@@ -133,17 +138,17 @@ variable "aws_zone" {
 
 variable "aws_ami" {
   type    = string
-  default = "ami-0e3654b38a33c9ca5"
+  default = "ami-0bc06212a56393ee1"
 }
 
 variable "aws_mariadb_instance_size" {
   type    = string
-  default = "t3.2xlarge"
+  default = "c6a.8xlarge"
 }
 
 variable "aws_maxscale_instance_size" {
   type    = string
-  default = "t3.medium"
+  default = "c6a.large"
 }
 
 variable "s3_domain" {

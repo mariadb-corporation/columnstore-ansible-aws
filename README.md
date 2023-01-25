@@ -43,7 +43,9 @@ AMI OS|AMI ID|Region|Zone|
 ---|---|---|---|
 CentOS 7|ami-0bc06212a56393ee1|us-west-2|us-west-2c|
 
-## MCS Commandline Instructions
+## MCS Command-line Instructions
+
+From your primary node:
 
 ##### Set API Code:
 

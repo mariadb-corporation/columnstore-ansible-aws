@@ -8,7 +8,7 @@ This is a [Terraform](https://www.terraform.io/) and [Ansible](https://www.ansib
 
 *   3 **MariaDB** Nodes For Durability & Performance
 *   1 **S3** Bucket For Object Storage (Data)
-*   1 **Multi-Attach** [io2 SSD GFS2 Volume(https://github.com/aws-samples/clustered-storage-gfs2)] (Shared Metadata)
+*   1 **Multi-Attach** [io2 SSD GFS2 Volume](https://github.com/aws-samples/clustered-storage-gfs2) (Shared Metadata)
 *   2 **MaxScale** Nodes For High Availability
 
 #### Prerequisites:

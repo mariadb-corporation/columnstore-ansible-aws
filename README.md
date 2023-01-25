@@ -109,10 +109,10 @@ https://{server}:{port}/cmapi/{version}/{route}/{command}
 
 ##### Request Headers Needed:
 
-*   'x-api-key': 'somekey123'[^1]
+*   'x-api-key': 'somekey123'
 *   'Content-Type': 'application/json'
 
-[^1]Note: x-api-key can be set to any value of your choice during the first call to the server. Subsequent connections will require this same key
+<sub>Note: x-api-key can be set to any value of your choice during the first call to the server. Subsequent connections will require this same key</sub>
 
 ##### Examples using curl:
 

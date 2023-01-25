@@ -1,6 +1,6 @@
 ---
 
-- hosts: "mcs1,mcs2"
+- hosts: "mcs1,mcs2,mcs3"
   name: "Installing Software"
   become: true
   become_user: root
@@ -16,6 +16,7 @@
         block: |
           {{ mcs1_private }} mcs1
           {{ mcs2_private }} mcs2
+          {{ mcs3_private }} mcs3
 
     - name: "Installing PCS Items"
       ansible.builtin.package:
@@ -55,16 +56,19 @@
   tasks:
 
     - name: "Authorizing PCS Nodes"
-      ansible.builtin.command: pcs cluster auth mcs1 mcs2 -u hacluster -p {{ pcs_pass }} 
+      ansible.builtin.command: pcs cluster auth mcs1 mcs2 mcs3 -u hacluster -p {{ pcs_pass }} 
 
     - name: "Setting Up PCS Cluster"
-      ansible.builtin.command: pcs cluster setup --name hacluster mcs1 mcs2
+      ansible.builtin.command: pcs cluster setup --name hacluster mcs1 mcs2 mcs3
 
     - name: "Starting PCS Cluster"
       ansible.builtin.command: pcs cluster start --all
 
+    - name: "Enabling PCS Cluster"
+      ansible.builtin.command: pcs cluster enable --all
+
     - name: "Setting Up Fencing"
-      ansible.builtin.command: pcs stonith create clusterfence fence_aws access_key={{ s3_access_key_id }} secret_key={{ s3_secret_access_key }} region={{ aws_region }} pcmk_host_map="mcs1:{{ mcs1_id }};mcs2:{{ mcs2_id }}" power_timeout=240 pcmk_reboot_timeout=480 pcmk_reboot_retries=4
+      ansible.builtin.command: pcs stonith create clusterfence fence_aws access_key={{ s3_access_key_id }} secret_key={{ s3_secret_access_key }} region={{ aws_region }} pcmk_host_map="mcs1:{{ mcs1_id }};mcs2:{{ mcs2_id }};mcs3:{{ mcs3_id }}" power_timeout=240 pcmk_reboot_timeout=480 pcmk_reboot_retries=4
 
     - name: "Setting 'No Quorum' Policy"
       ansible.builtin.command: pcs property set no-quorum-policy=freeze
@@ -72,7 +76,7 @@
     - name: "Creating 'controld' Resource"
       ansible.builtin.command: pcs resource create dlm ocf:pacemaker:controld op monitor interval=30s on-fail=fence clone interleave=true ordered=true
 
-- hosts: "mcs1,mcs2"
+- hosts: "mcs1,mcs2,mcs3"
   name: "Starting Locks"
   become: true
   become_user: root
@@ -116,7 +120,7 @@
       ansible.builtin.command: lvcreate -L99G -n clusterlv clustervg
 
     - name: "Formatting Logical Volume With GFS2"
-      ansible.builtin.command: mkfs.gfs2 -O -j2 -p lock_dlm -t hacluster:storagemanager /dev/clustervg/clusterlv
+      ansible.builtin.command: mkfs.gfs2 -O -j3 -p lock_dlm -t hacluster:storagemanager /dev/clustervg/clusterlv
 
     - name: "Creating Cluster File System"
       ansible.builtin.command: pcs resource create clusterfs Filesystem device="/dev/clustervg/clusterlv" directory="/var/lib/columnstore/storagemanager" fstype="gfs2" options="noatime" op monitor interval=10s on-fail=fence clone interleave=true

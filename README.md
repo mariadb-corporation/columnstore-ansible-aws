@@ -6,7 +6,7 @@
 
 This is a [Terraform](https://www.terraform.io/) and [Ansible](https://www.ansible.com/) project to provision a **high availability** [MariaDB ColumnStore](https://mariadb.com/docs/features/mariadb-enterprise-columnstore/#mariadb-enterprise-columnstore) deployment on [Amazon Web Services](https://aws.amazon.com/). This automation project will create the following system:
 
-*   2 **MariaDB** Nodes For Durability & Performance
+*   3 **MariaDB** Nodes For Durability & Performance
 *   1 **S3** Bucket For Object Storage (Data)
 *   1 **Multi-Attach** io2 SSD Volume (Shared Metadata)
 *   2 **MaxScale** Nodes For High Availability

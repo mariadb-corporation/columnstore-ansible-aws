@@ -58,7 +58,7 @@ resource "aws_instance" "mcs1" {
   availability_zone = var.aws_zone
   instance_type     = var.aws_mariadb_instance_size
   key_name          = var.key_pair_name
-  private_ip        = "172.31.15.251"
+  private_ip        = "172.31.15.151"
   root_block_device {
     volume_size = 100
   }
@@ -75,7 +75,7 @@ resource "aws_instance" "mcs2" {
   availability_zone = var.aws_zone
   instance_type     = var.aws_mariadb_instance_size
   key_name          = var.key_pair_name
-  private_ip        = "172.31.15.252"
+  private_ip        = "172.31.15.152"
   root_block_device {
     volume_size = 100
   }
@@ -86,12 +86,29 @@ resource "aws_instance" "mcs2" {
   }
 }
 
+resource "aws_instance" "mcs3" {
+  ami               = var.aws_ami
+  subnet_id         = var.aws_subnet
+  availability_zone = var.aws_zone
+  instance_type     = var.aws_mariadb_instance_size
+  key_name          = var.key_pair_name
+  private_ip        = "172.31.15.153"
+  root_block_device {
+    volume_size = 100
+  }
+  user_data              = file("terraform_includes/create_user.sh")
+  vpc_security_group_ids = [aws_security_group.mcs_traffic.id]
+  tags = {
+    Name = "mcs3"
+  }
+}
+
 resource "aws_instance" "mx1" {
   ami                    = var.aws_ami
   availability_zone      = var.aws_zone
   instance_type          = var.aws_maxscale_instance_size
   key_name               = var.key_pair_name
-  private_ip        = "172.31.15.253"
+  private_ip        = "172.31.15.154"
   root_block_device {
     volume_size = 40
   }
@@ -107,7 +124,7 @@ resource "aws_instance" "mx2" {
   availability_zone      = var.aws_zone
   instance_type          = var.aws_maxscale_instance_size
   key_name               = var.key_pair_name
-  private_ip        = "172.31.15.254"
+  private_ip        = "172.31.15.155"
   root_block_device {
     volume_size = 40
   }
@@ -148,4 +165,10 @@ resource "aws_volume_attachment" "ebs_mcs_2" {
   device_name = "/dev/sdf"
   volume_id   = aws_ebs_volume.storagemanager.id
   instance_id = aws_instance.mcs2.id
+}
+
+resource "aws_volume_attachment" "ebs_mcs_3" {
+  device_name = "/dev/sdf"
+  volume_id   = aws_ebs_volume.storagemanager.id
+  instance_id = aws_instance.mcs3.id
 }

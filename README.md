@@ -2,7 +2,10 @@
 
 ### MariaDB Enterprise Cluster / ColumnStore Engine / MaxScale Proxy
 
-#### About:
+## Summary
+MariaDB ColumnStore is a columnar storage engine that utilizes a massively parallel distributed data architecture. It was built by porting InfiniDB to MariaDB and has been released under the GPL license.
+
+MariaDB ColumnStore is designed for big data scaling to process petabytes of data, linear scalability and exceptional performance with real-time response to analytical queries. It leverages the I/O benefits of columnar storage, compression, just-in-time projection, and horizontal and vertical partitioning to deliver tremendous performance when analyzing large data sets.
 
 This is a [Terraform](https://www.terraform.io/) and [Ansible](https://www.ansible.com/) project to provision a **high availability** [MariaDB ColumnStore](https://mariadb.com/docs/features/mariadb-enterprise-columnstore/#mariadb-enterprise-columnstore) deployment on [Amazon Web Services](https://aws.amazon.com/). This automation project will create the following system:
 
@@ -11,7 +14,7 @@ This is a [Terraform](https://www.terraform.io/) and [Ansible](https://www.ansib
 *   1 **Multi-Attach** [io2 SSD GFS2 Volume](https://github.com/aws-samples/clustered-storage-gfs2) (Shared Metadata)
 *   2 **MaxScale** Nodes For High Availability
 
-#### Prerequisites:
+## Prerequisites:
 
 *   [Amazon Web Services (AWS) Account](https://aws.amazon.com/)
 *   [Install Terraform](https://www.terraform.io) *<sup>†</sup>*
@@ -21,7 +24,7 @@ This is a [Terraform](https://www.terraform.io/) and [Ansible](https://www.ansib
 *<sup>†</sup> Requires Terraform v0.14.4 or above.*  
 *<sup>‡</sup> Requires Full Ansible 2.10.5 or above. (Not Ansible-Core)*
 
-#### Instructions:
+## Instructions:
 
 Open a terminal window and clone the repository:
 
@@ -35,7 +38,7 @@ Open a terminal window and clone the repository:
 
 Further information can be found on our [official deployment guide](https://mariadb.com/docs/deploy/enterprise-multi-columnstore/).
 
-##### Current Approved AWS Image(s)
+## Current Approved AWS Image(s)
 AMI OS|AMI ID|Region|Zone|
 ---|---|---|---|
 CentOS 7|ami-0bc06212a56393ee1|us-west-2|us-west-2c|

@@ -112,7 +112,7 @@ https://{server}:{port}/cmapi/{version}/{route}/{command}
 *   'x-api-key': 'somekey123'
 *   'Content-Type': 'application/json'
 
-<sub>Note: x-api-key can be set to any value of your choice during the first call to the server. Subsequent connections will require this same key</sub>
+<sub>**Note:** x-api-key can be set to any value of your choice during the first call to the server. Subsequent connections will require this same key</sub>
 
 ##### Examples using curl:
 

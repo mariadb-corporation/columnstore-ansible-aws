@@ -73,7 +73,7 @@
     - name: "Setting 'No Quorum' Policy"
       ansible.builtin.command: pcs property set no-quorum-policy=freeze
 
-    - name: "Creating 'controld' Resource"
+    - name: "Creating 'dlm' Resource"
       ansible.builtin.command: pcs resource create dlm ocf:pacemaker:controld op monitor interval=30s on-fail=fence clone interleave=true ordered=true
 
 - hosts: "mcs1,mcs2,mcs3"

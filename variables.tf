@@ -7,6 +7,12 @@
 
 #### EDIT THESE ITEMS
 
+# Determines if LocalStorage or S3 Topology
+variable "use_s3" {
+  type    = bool
+  default = true
+}
+
 variable "mariadb_enterprise_token" {
   type    = string
   default = "YOUR MARIADB ENTERPRISE TOKEN HERE"
@@ -45,21 +51,6 @@ variable "aws_subnet" {
 variable "cmapi_key" {
   type    = string
   default = "CREATE A COLUMNSTORE API KEY HERE"
-}
-
-variable "use_s3" {
-  type    = bool
-  default = true
-}
-
-variable "s3_ssl_disable" {
-  type    = bool
-  default = false
-}
-
-variable "s3_use_http" {
-  type    = bool
-  default = false
 }
 
 variable "pcs_pass" {
@@ -109,7 +100,21 @@ variable "cej_pass" {
   default = "SET YOUR COLUMNSTORE UTILITY USER PASSWORD HERE"
 }
 
-#### DO NOT EDIT BELOW THIS POINT UNLESS YOU ARE FAMILIAR WITH THESE PARAMETERS
+#### Cluster Size
+
+variable "num_columnstore_nodes" {
+  description = "Number of Columnstore nodes"
+  type        = number
+  default     = 3
+}
+
+variable "num_maxscale_instances" {
+  description = "Number of MaxScale instances"
+  type        = number
+  default     = 2
+}
+
+#### MariaDB Versions
 
 variable "mariadb_version" {
   type    = string
@@ -121,10 +126,7 @@ variable "maxscale_version" {
   default = "latest"
 }
 
-variable "reboot" {
-  type    = bool
-  default = true
-}
+#### AWS EC2 Options 
 
 variable "aws_region" {
   type    = string
@@ -149,6 +151,32 @@ variable "aws_mariadb_instance_size" {
 variable "aws_maxscale_instance_size" {
   type    = string
   default = "c6a.large"
+}
+
+#### DO NOT EDIT BELOW THIS POINT UNLESS YOU ARE FAMILIAR WITH THESE PARAMETERS
+
+variable "s3_ssl_disable" {
+  type    = bool
+  default = false
+}
+
+variable "s3_use_http" {
+  type    = bool
+  default = false
+}
+variable "reboot" {
+  type    = bool
+  default = true
+}
+
+variable "s3_ssl_disable" {
+  type    = bool
+  default = false
+}
+
+variable "s3_use_http" {
+  type    = bool
+  default = false
 }
 
 variable "s3_domain" {

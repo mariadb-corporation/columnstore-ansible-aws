@@ -113,12 +113,6 @@
       regexp: '^bind-address'
       replace: '#bind-address'
 
-  - name: "Setting Server IDs"
-    replace:
-      path: '{{ columnstore_cnf }}'
-      regexp: '^.*server.id.*$'
-      replace: "server_id = {{ inventory_hostname.split('s')[-1] }}"
-
   - name: "Configuring columnstore.cnf"
     blockinfile:
       path: '{{ columnstore_cnf }}'
@@ -135,6 +129,13 @@
         lower_case_table_names = 1
         relay_log = /var/log/mariadb/mariadb-relay
         relay_log_index = /var/log/mariadb/mariadb-relay.index
+        server_id = {{ inventory_hostname.split('s')[-1] }}
+
+  - name: "Setting Server IDs"
+    replace:
+      path: '{{ columnstore_cnf }}'
+      regexp: '^.*server.id.*$'
+      replace: "server_id = {{ inventory_hostname.split('s')[-1] }}"
 
   - name: "Verify Ownership Of Log Folder"
     file:

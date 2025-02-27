@@ -1,0 +1,281 @@
+---
+
+- hosts: "primary,replicas,maxscale"
+  become: yes
+  become_user: root
+  vars_files:
+    - '../inventory/group_vars/distro/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}.yml'
+    - '../inventory/group_vars/all.yml'
+
+  tasks:
+
+  - name: "Ensure MariaDB RPMs directory exists"
+    file:
+      path: "{{ mariadb_rpms_path }}"
+      state: directory
+      mode: '0755'
+      
+  - name: "Check if MariaDB RPMs directory exists"
+    stat:
+      path: "{{ mariadb_rpms_path }}"
+    register: rpm_dir
+
+  - name: "Fail if MariaDB RPMs directory does not exist"
+    fail:
+      msg: "The directory {{ mariadb_rpms_path }} does not exist."
+    when: not rpm_dir.stat.exists
+
+  - name: "Debug cs_package_manager_custom_version"
+    debug:
+      var: cs_package_manager_custom_version
+    when: cs_package_manager_custom_version is defined and cs_package_manager_custom_version != "" and cs_package_manager_custom_version is not none
+
+  - name: "Download cs_package_manager script"
+    get_url:
+      url: "https://raw.githubusercontent.com/mariadb-corporation/mariadb-columnstore-engine/refs/heads/cs_package_manager_v3.5/cmapi/scripts/cs_package_manager.sh"
+      dest: "{{ mariadb_rpms_path }}/cs_package_manager.sh"
+      mode: '0755'
+    when: cs_package_manager_custom_version is defined and cs_package_manager_custom_version != "" and cs_package_manager_custom_version is not none
+
+- hosts: "primary,replicas"
+  become: yes
+  become_user: root
+  vars_files:
+    - '../inventory/group_vars/distro/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}.yml'
+    - '../inventory/group_vars/all.yml'
+    
+  tasks:
+
+  - name: "Download MariaDB RPMs using cs_package_manager script"
+    command: bash {{ mariadb_rpms_path }}/cs_package_manager.sh {{ cs_package_manager_custom_version }} --directory {{ mariadb_rpms_path }} 
+    register: cs_package_manager_output
+    when: cs_package_manager_custom_version is defined and cs_package_manager_custom_version != "" and cs_package_manager_custom_version is not none
+
+  - name: "cs_package_manager output"
+    debug:
+      msg: "{{ cs_package_manager_output.stdout }}"
+    when: cs_package_manager_custom_version is defined and cs_package_manager_custom_version != "" and cs_package_manager_custom_version is not none and cs_package_manager_output is defined
+
+  - name: "cs_package_manager errors"
+    debug:
+      msg: "{{ cs_package_manager_output.stderr }}"
+    when: cs_package_manager_custom_version is defined and cs_package_manager_custom_version != "" and cs_package_manager_custom_version is not none and cs_package_manager_output is defined and cs_package_manager_output.stderr != ""
+
+  - name: "Check for RPM or DEB files in the directory"
+    find:
+      paths: "{{ mariadb_rpms_path }}"
+      patterns: "*.rpm,*.deb"
+      use_regex: false
+    register: rpm_files
+
+  - name: "Fail if no RPM or DEB files are found in the directory"
+    fail:
+      msg: "The directory {{ mariadb_rpms_path }} does not contain any .rpm or .deb files."
+    when: rpm_files.matched == 0
+
+  - name: "Debug list of RPM or DEB file paths found"
+    debug:
+      msg: "{{ rpm_files.files | map(attribute='path') | list }}"
+
+  - name: "Installing MariaDB RPMs from directory"
+    yum:
+      name: "{{ rpm_files.files | map(attribute='path') | join(',') }}"
+      state: present
+      disable_gpg_check: yes
+    when:
+      - ansible_os_family == "RedHat"
+      - rpm_files.matched > 0
+
+  - name: "Installing MariaDB DEBs from directory"
+    apt:
+      deb: "{{ rpm_files.files | map(attribute='path') | join(',') }}"
+      state: present
+      disable_gpg_check: yes
+    when:
+      - ansible_os_family == "Debian"
+      - rpm_files.matched > 0
+
+  - name: "Configuring Storagemanager Service"
+    replace:
+      path: '{{ storagemanager_cnf }}'
+      regexp: '^service =.*$'
+      replace: 'service = S3'
+    when: use_s3 == true
+
+  - name: "Configuring Storagemanager Bucket"
+    replace:
+      path: '{{ storagemanager_cnf }}'
+      regexp: '^bucket =.*$'
+      replace: 'bucket = {{ s3_bucket }}'
+    when: use_s3 == true
+
+  - name: "Configuring Storagemanager Region"
+    replace:
+      path: '{{ storagemanager_cnf }}'
+      regexp: '^region =.*$'
+      replace: 'region = {{ aws_region }}'
+    when: use_s3 == true
+
+  - name: "Configuring Storagemanager Endpoint"
+    replace:
+      path: '{{ storagemanager_cnf }}'
+      regexp: '^# endpoint =.*$|^endpoint =.*$'
+      replace: 'endpoint = {{ s3_endpoint }}'
+    when: use_s3 == true
+
+  - name: "Configuring Storagemanger Port"
+    lineinfile:
+      path: '{{ storagemanager_cnf }}'
+      regexp: '^port_number =.*$'
+      insertafter: '^# endpoint =.*$|^endpoint =.*$'
+      line: 'port_number = {{ s3_port }}'
+      firstmatch: yes
+      state: present
+
+  - name: "Configuring Storagemanager Access ID"
+    replace:
+      path: '{{ storagemanager_cnf }}'
+      regexp: '^# aws_access_key_id =.*$|^aws_access_key_id =.*$'
+      replace: 'aws_access_key_id = {{ s3_access_key_id }}'
+    when: use_s3 == true
+
+  - name: "Configuring Storagemanager Access Secret"
+    replace:
+      path: '{{ storagemanager_cnf }}'
+      regexp: '^# aws_secret_access_key =.*$|^aws_secret_access_key =.*$'
+      replace: 'aws_secret_access_key = {{ s3_secret_access_key }}'
+    when: use_s3 == true
+
+  - name: "Configuring Storagemanager Transfer Protocol"
+    replace:
+      path: '{{ storagemanager_cnf }}'
+      regexp: '^# use_http =.*$|^use_http =.*$'
+      replace: 'use_http = enabled'
+    when: use_s3 == true and s3_use_http == true
+
+  - name: "Configuring Storagemanager SSL Verify"
+    replace:
+      path: '{{ storagemanager_cnf }}'
+      regexp: '^# ssl_verify =.*$|^ssl_verify =.*$'
+      replace: 'ssl_verify = disabled'
+    when: use_s3 == true and s3_ssl_disable == true
+
+  - name: "Configuring Bind Address"
+    replace:
+      path: '{{ server_cnf }}'
+      regexp: '^bind-address'
+      replace: '#bind-address'
+
+  - name: "Configuring columnstore.cnf"
+    blockinfile:
+      path: '{{ columnstore_cnf }}'
+      block: |
+        character_set_server = utf8
+        collation_server = utf8_general_ci
+        columnstore_use_import_for_batchinsert=ON
+        #gtid_strict_mode = ON
+        ignore_db_dirs = .pki
+        log_bin = /var/log/mariadb/mariadb-bin
+        log_bin_index = /var/log/mariadb/mariadb-bin.index
+        log_error = /var/log/mariadb/mariadb-error.log
+        log_slave_updates = ON
+        lower_case_table_names = 1
+        relay_log = /var/log/mariadb/mariadb-relay
+        relay_log_index = /var/log/mariadb/mariadb-relay.index
+        server_id = {{ inventory_hostname.split('s')[-1] }}
+
+  - name: "Setting Server IDs"
+    replace:
+      path: '{{ columnstore_cnf }}'
+      regexp: '^.*server.id.*$'
+      replace: "server_id = {{ inventory_hostname.split('s')[-1] }}"
+
+  - name: "Verify Ownership Of Log Folder"
+    file:
+      path: /var/log/mariadb
+      state: directory
+      owner: mysql
+      group: mysql
+      mode: '0755'
+
+  - name: "Set ownership of /mnt/data to mysql:mysql"
+    file:
+      path: /mnt/data
+      state: directory
+      owner: mysql
+      group: mysql
+      recurse: yes
+    when: mariadb_has_nvme
+
+  - name: "Enabling MariaDB Server"
+    systemd:
+      name: mariadb
+      state: restarted
+      enabled: yes
+
+  - name: "Stopping Columnstore Engine"
+    systemd:
+      name: mariadb-columnstore
+      state: stopped
+      enabled: no
+
+  - name: "Installing CMAPI Server"
+    package:
+      name: '{{ item }}'
+      state: present
+      update_cache: yes
+    with_items:
+      - '{{ mariadb_columnstore_cmapi }}'
+
+  - name: "Enabling CMAPI Server"
+    systemd:
+      name: mariadb-columnstore-cmapi
+      state: started
+      enabled: yes
+
+- hosts: "maxscale"
+  become: yes
+  become_user: root
+  vars_files:
+    - '../inventory/group_vars/distro/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}.yml'
+
+  tasks:
+
+  # Adjust to download maxscale rpm
+  # - name: "Download MariaDB RPMs using cs_package_manager script"
+  #   command: bash {{ mariadb_rpms_path }}/cs_package_manager.sh {{ cs_package_manager_custom_version }} --directory {{ mariadb_rpms_path }}
+  #   when: cs_package_manager_custom_version is defined and cs_package_manager_custom_version != ""
+
+  - name: "Check for RPM or DEB files in the directory"
+    find:
+      paths: "{{ mariadb_rpms_path }}"
+      patterns: "*.rpm,*.deb"
+      use_regex: false
+    register: rpm_files
+
+  - name: "Fail if no RPM or DEB files are found in the directory"
+    fail:
+      msg: "The directory {{ mariadb_rpms_path }} does not contain any .rpm or .deb files."
+    when: rpm_files.matched == 0
+
+  - name: "Debug list of RPM or DEB file paths found"
+    debug:
+      msg: "{{ rpm_files.files | map(attribute='path') | list }}"
+ 
+  - name: "Installing MariaDB RPMs from directory for maxscale"
+    yum:
+      name: "{{ rpm_files.files | map(attribute='path') | join(',') }}"
+      state: present
+      disable_gpg_check: yes
+    when:
+      - ansible_os_family == "RedHat"
+      - rpm_files.matched > 0
+
+  - name: "Installing MariaDB DEBs from directory for maxscale"
+    apt:
+      deb: "{{ rpm_files.files | map(attribute='path') | join(',') }}"
+      state: present
+      disable_gpg_check: yes
+    when:
+      - ansible_os_family == "Debian"
+      - rpm_files.matched > 0

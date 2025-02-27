@@ -55,11 +55,15 @@
 
   tasks:
 
+    - name: "Wiping existing filesystem on /dev/nvme1n1"
+      ansible.builtin.command: wipefs -a /dev/nvme1n1
+      ignore_errors: true
+
     - name: "Authorizing PCS Nodes"
       ansible.builtin.command: pcs cluster auth {{ groups['all'] | reject('search', '^mx') | join(' ') }} -u hacluster -p {{ pcs_pass }}
 
     - name: "Setting Up PCS Cluster"
-      ansible.builtin.command: pcs cluster setup --name hacluster {{ groups['all'] | reject('search', '^mx') | join(' ') }}
+      ansible.builtin.command: pcs cluster setup --name hacluster {{ groups['all'] | reject('search', '^mx') | join(' ') }} --force
 
     - name: "Starting PCS Cluster"
       ansible.builtin.command: pcs cluster start --all

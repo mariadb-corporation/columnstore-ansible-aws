@@ -1,0 +1,116 @@
+---
+- hosts: primary,replicas
+  name: Configure NVMe and Symlinks for MariaDB Instances
+  become: true
+  become_user: root
+  gather_facts: true
+  vars_files:
+    - '../inventory/group_vars/all.yml'
+
+  tasks:
+    - name: Gather disk information
+      setup:
+        filter: ansible_devices
+
+    - name: Set NVMe devices
+      set_fact:
+        nvme_devices: "{{ ansible_devices | dict2items | selectattr('key', 'match', '^nvme[0-9]n[0-9]$') | map(attribute='key') | list }}"
+
+    - name: Debug NVMe devices
+      debug:
+        var: nvme_devices
+
+    - name: Check if NVMe devices are partitioned
+      shell: lsblk -n -o NAME /dev/{{ item }} | tail -n +2
+      register: nvme_partition_check
+      with_items: "{{ nvme_devices }}"
+      changed_when: false
+      failed_when: false
+    
+    - name: Set unpartitioned NVMe devices
+      set_fact:
+        unpartitioned_nvme_devices: "{{ nvme_partition_check.results | selectattr('stdout', 'equalto', '') | map(attribute='item') | list }}"
+    
+    - name: Debug unpartitioned NVMe devices
+      debug:
+        var: unpartitioned_nvme_devices
+
+    - name: Create physical volume on NVMe devices
+      command: pvcreate /dev/{{ item }}
+      ignore_errors: true
+      with_items: "{{ unpartitioned_nvme_devices }}"
+      when: mariadb_has_nvme
+
+    - name: Create volume group
+      command: vgcreate vg_nvme /dev/{{ unpartitioned_nvme_devices[0] }} /dev/{{ unpartitioned_nvme_devices[1] }}
+      ignore_errors: true
+      when: mariadb_has_nvme and unpartitioned_nvme_devices | length >= 2
+
+    - name: Create logical volume
+      command: lvcreate -l 100%FREE -n lv_data vg_nvme
+      ignore_errors: true
+      when: mariadb_has_nvme
+
+    - name: Create filesystem
+      filesystem:
+        fstype: ext4
+        dev: /dev/vg_nvme/lv_data
+      ignore_errors: true
+      when: mariadb_has_nvme
+
+    - name: Create mount point
+      file:
+        path: /mnt/data
+        state: directory
+      when: mariadb_has_nvme
+
+    - name: Mount the logical volume
+      mount:
+        path: /mnt/data
+        src: /dev/vg_nvme/lv_data
+        fstype: ext4
+        state: mounted
+      when: mariadb_has_nvme
+
+    # - name: Ensure mount persists across reboots - wont work for ephemeral disk
+    #   mount:
+    #     path: /mnt/data
+    #     src: /dev/vg_nvme/lv_data
+    #     fstype: ext4
+    #     opts: defaults
+    #     state: present
+    #   when: mariadb_has_nvme
+
+    - name: Create columnstore directory on /mnt/data
+      file:
+        path: /mnt/data/columnstore
+        state: directory
+      when: mariadb_has_nvme
+
+    - name: Create columnstore_tmp_files directory on /mnt/data
+      file:
+        path: /mnt/data/columnstore_tmp_files
+        state: directory
+      when: mariadb_has_nvme
+
+    - name: Create symlink for /var/lib/columnstore
+      file:
+        src: /mnt/data/columnstore
+        dest: /var/lib/columnstore
+        state: link
+      when: mariadb_has_nvme
+
+    - name: Create symlink for /tmp/columnstore_tmp_files
+      file:
+        src: /mnt/data/columnstore_tmp_files
+        dest: /tmp/columnstore_tmp_files
+        state: link
+      when: mariadb_has_nvme
+
+    - name: Set permissions of /mnt/data to 0777
+      file:
+        path: /mnt/data
+        state: directory
+        mode: '0777'
+        recurse: yes
+      when: mariadb_has_nvme

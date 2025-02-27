@@ -161,6 +161,27 @@
     - '../inventory/group_vars/distro/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}.yml'
 
   tasks:
+
+  # - name: "Fetch existing nodes in the cluster"
+  #   uri:
+  #     url: "https://{{ hostvars['mcs1'].ansible_host }}:8640/cmapi/0.4.0/cluster/status"
+  #     method: GET
+  #     headers:
+  #       Content-Type: application/json
+  #       x-api-key: "{{ api_key }}"
+  #     validate_certs: no
+  #     return_content: yes
+  #     status_code: 200
+  #   register: cluster_info
+
+  # - name: "Debug: Print existing nodes in the cluster"
+  #   debug:
+  #     msg: "{{ cluster_info.json }}"
+
+  # - name: "Remove existing nodes from the cluster"
+  #   shell: mcs cluster node remove --node {{ item.key }}
+  #   with_dict: "{{ cluster_info.json }}"
+  #   when: cluster_info.json['num_nodes'] | int > 0
   
   - name: "Adding Nodes To ColumnStore Cluster"
     uri:

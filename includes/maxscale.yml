@@ -56,11 +56,11 @@
       url: http://127.0.0.1:8989/v1/monitors
       method: POST
       body_format: json
-      body: {"data":{"id":"mcs_monitor","type":"monitors","attributes":{"module":"mariadbmon","parameters":{"user":"{{ maxscale_user }}","password":"{{ maxscale_pass }}","replication_user":"{{ repli_user}}","replication_password":"{{ repli_pass }}","cooperative_monitoring_locks":"majority_of_running","enforce_read_only_slaves":true,"auto_failover":true,"auto_rejoin":true}},"relationships":{"servers":{"data": "{{ groups['all'] | reject('search', '^mx') | map('regex_replace', '^(.*)$', '{\"id\": \"\\1\", \"type\": \"servers\"}') | map('from_json') | list }}" }}}}
+      body: {"data":{"id":"mcs_monitor","type":"monitors","attributes":{"module":"mariadbmon","parameters":{"user":"{{ maxscale_user }}","password":"{{ maxscale_pass }}","replication_user":"{{ repli_user}}","replication_password":"{{ repli_pass }}","cooperative_monitoring_locks":"majority_of_running","enforce_read_only_slaves":true,"auto_failover":"true","auto_rejoin":true}},"relationships":{"servers":{"data": "{{ groups['all'] | reject('search', '^mx') | map('regex_replace', '^(.*)$', '{\"id\": \"\\1\", \"type\": \"servers\"}') | map('from_json') | list }}" }}}}
       user: admin
       password: mariadb
       status_code: 204
-    no_log: true
+
     
   - name: "Adding Service To MaxScale"
     uri:

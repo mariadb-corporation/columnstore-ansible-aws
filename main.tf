@@ -5,7 +5,7 @@ provider "aws" {
 }
 
 resource "aws_security_group" "mcs_traffic" {
-  name   = "mcs_traffic"
+  name   = "${var.deployment_prefix}${var.security_group_name}"
   vpc_id = var.aws_vpc
 
   ingress {
@@ -60,13 +60,18 @@ resource "aws_instance" "columnstore_node" {
   instance_type     = var.aws_mariadb_instance_size
   key_name          = var.key_pair_name
   root_block_device {
-    volume_size = 100
+    volume_size = var.columnstore_node_root_block_size
+    volume_type = "gp3"
+    iops        = 16000
   }
   user_data              = file("terraform_includes/create_user.sh")
   vpc_security_group_ids = [aws_security_group.mcs_traffic.id]
-  tags = {
-    Name = "mcs${count.index + 1}"
-  }
+  tags = merge(
+    {
+      Name = "${var.deployment_prefix}-mcs${count.index + 1}"
+    },
+    var.additional_tags
+  )
 }
 
 resource "aws_instance" "maxscale_instance" {
@@ -76,13 +81,16 @@ resource "aws_instance" "maxscale_instance" {
   instance_type     = var.aws_maxscale_instance_size
   key_name          = var.key_pair_name
   root_block_device {
-    volume_size = 40
+    volume_size = var.maxscale_node_root_block_size
   }
   user_data              = file("terraform_includes/create_user.sh")
   vpc_security_group_ids = [aws_security_group.mcs_traffic.id]
-  tags = {
-    Name = "mx${count.index + 1}"
-  }
+  tags = merge(
+    {
+      Name = "${var.deployment_prefix}-mx${count.index + 1}"
+    },
+    var.additional_tags
+  )
 }
 
 resource "aws_s3_bucket" "s3_bucket" {
@@ -95,6 +103,7 @@ resource "aws_s3_bucket" "s3_bucket" {
 }
 
 resource "aws_ebs_volume" "storagemanager" {
+  count                   = var.use_s3 ? 1 : 0
   availability_zone       = var.aws_zone
   size                    = 100
   multi_attach_enabled    = true
@@ -106,8 +115,8 @@ resource "aws_ebs_volume" "storagemanager" {
 }
 
 resource "aws_volume_attachment" "ebs_attachment" {
-  count        = var.num_columnstore_nodes
+  count        = var.use_s3 ? var.num_columnstore_nodes : 0
   device_name  = "/dev/sdf"
-  volume_id    = aws_ebs_volume.storagemanager.id
+  volume_id    = aws_ebs_volume.storagemanager[0].id
   instance_id  = aws_instance.columnstore_node[count.index].id
 }

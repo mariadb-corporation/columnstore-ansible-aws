@@ -64,11 +64,17 @@ resource "local_file" "AnsibleVariables" {
       pcs_pass                 = var.pcs_pass,
       repli_pass               = var.repli_pass,
       repli_user               = var.repli_user,
-      s3_bucket                = var.use_s3 ? aws_s3_bucket.s3_bucket[0].id : null,
+      s3_bucket                = var.use_s3 ? aws_s3_bucket.s3_bucket[0].id : "",
       s3_domain                = var.s3_domain,
       s3_ssl_disable           = var.s3_ssl_disable,
       s3_use_http              = var.s3_use_http,
       use_s3                   = var.use_s3,
+      aws_mariadb_instance_size= var.aws_mariadb_instance_size,
+      aws_maxscale_instance_size= var.aws_maxscale_instance_size,
+      mariadb_has_nvme = can(regex("d\\.metal", var.aws_mariadb_instance_size)) ? true : false,
+      mariadb_rpms_path        = var.mariadb_rpms_path,
+      cs_package_manager_custom_version = var.cs_package_manager_custom_version,
+      reboot                   = var.reboot,
     }
   )
   filename = "inventory/group_vars/all.yml"

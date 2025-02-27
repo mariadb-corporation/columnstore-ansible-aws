@@ -28,6 +28,7 @@
   become_user: root
   vars_files:
     - '../inventory/group_vars/distro/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}.yml'
+    - '../inventory/group_vars/all.yml'
 
   tasks:
 
@@ -142,6 +143,15 @@
       owner: mysql
       group: mysql
       mode: '0755'
+
+  - name: "Set ownership of /mnt/data to mysql:mysql"
+    file:
+      path: /mnt/data
+      state: directory
+      owner: mysql
+      group: mysql
+      recurse: yes
+    when: mariadb_has_nvme
 
   - name: "Enabling MariaDB Server"
     systemd:

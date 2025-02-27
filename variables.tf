@@ -1,13 +1,13 @@
-#### Before editing this file, be sure to read the AWS documentation on:
-####
-####  * VPCs
-####  * Programmatic Access
-####
-#### Grab your enterprise token from the MariaDB website (https://customers.mariadb.com/downloads/token/).
+######## Before editing this file, be sure to read the AWS documentation on:
+########
+########  * VPCs
+########  * Programmatic Access
+########
+######## Grab your enterprise token from the MariaDB website (https://customers.mariadb.com/downloads/token/).
 
-#### EDIT THESE ITEMS
+######## EDIT THESE ITEMS
 
-# Determines if LocalStorage or S3 Topology
+# Determines if Columnstore LocalStorage or S3 Topology
 variable "use_s3" {
   type    = bool
   default = true
@@ -18,47 +18,17 @@ variable "mariadb_enterprise_token" {
   default = "YOUR MARIADB ENTERPRISE TOKEN HERE"
 }
 
-variable "aws_access_key" {
-  type    = string
-  default = "YOUR AWS ACCESS KEY HERE"
-}
-
-variable "aws_secret_key" {
-  type    = string
-  default = "YOUR AWS SECRET KEY HERE"
-}
-
-variable "key_pair_name" {
-  type    = string
-  default = "YOUR AWS KEY PAIR NAME HERE"
-}
-
-variable "ssh_key_file" {
-  type    = string
-  default = "/PATH/TO/KEY/FILE.PEM"
-}
-
-variable "aws_vpc" {
-  type    = string
-  default = "YOUR AWS VPC ID HERE"
-}
-
-variable "aws_subnet" {
-  type    = string
-  default = "YOUR AWS SUBNET ID HERE"
-}
-
 variable "cmapi_key" {
   type    = string
-  default = "CREATE A COLUMNSTORE API KEY HERE"
+  default = "CREATE A COLUMNSTORE API KEY HERE - ANY RANDOM STRING"
 }
 
 variable "pcs_pass" {
   type    = string
-  default = "SET PCS CLUSTER PASSWORD HERE"
+  default = "SET PCS CLUSTER PASSWORD HERE - ANY RANDOM STRING"
 }
 
-#### DATABASE CREDENTIALS
+######## DATABASE CREDENTIALS
 
 variable "admin_user" {
   type    = string
@@ -100,7 +70,7 @@ variable "cej_pass" {
   default = "SET YOUR COLUMNSTORE UTILITY USER PASSWORD HERE"
 }
 
-#### Cluster Size
+######## Cluster Size
 
 variable "num_columnstore_nodes" {
   description = "Number of Columnstore nodes"
@@ -114,11 +84,11 @@ variable "num_maxscale_instances" {
   default     = 2
 }
 
-#### MariaDB Versions
+######## MariaDB Versions
 
 variable "mariadb_version" {
   type    = string
-  default = "10.6"
+  default = "11.4"
 }
 
 variable "maxscale_version" {
@@ -126,8 +96,29 @@ variable "maxscale_version" {
   default = "latest"
 }
 
-#### AWS EC2 Options 
+######## AWS CONFIGURATION 
 
+variable "key_pair_name" {
+  type    = string
+  default = "YOUR AWS KEY PAIR NAME HERE"
+}
+
+variable "ssh_key_file" {
+  type    = string
+  default = "/PATH/TO/KEY/FILE.PEM"
+}
+
+variable "aws_access_key" {
+  type    = string
+  default = "YOUR AWS ACCESS KEY HERE"
+}
+
+variable "aws_secret_key" {
+  type    = string
+  default = "YOUR AWS SECRET KEY HERE"
+}
+
+# aws_region will influence aws_vpc, aws_subnet, aws_zone & aws_ami
 variable "aws_region" {
   type    = string
   default = "us-west-2"
@@ -138,9 +129,29 @@ variable "aws_zone" {
   default = "us-west-2a"
 }
 
+# Confirm your VPC exists in aws_region choosen
+variable "aws_vpc" {
+  type    = string
+  default = "YOUR AWS VPC ID HERE"
+}
+
+# Confirm your subnet exists in aws_vpc choosen
+variable "aws_subnet" {
+  type    = string
+  default = "YOUR AWS SUBNET ID HERE"
+}
+
+######## AWS EC2 Options 
+
+# AMI's are specific to regions
 variable "aws_ami" {
   type    = string
-  default = "ami-0bc06212a56393ee1"
+  default = "ami-0faa73a0256c330e9"
+}
+
+variable "security_group_name" {
+  type    = string
+  default = "mcs_traffic"
 }
 
 variable "aws_mariadb_instance_size" {
@@ -153,33 +164,63 @@ variable "aws_maxscale_instance_size" {
   default = "c6a.large"
 }
 
-#### DO NOT EDIT BELOW THIS POINT UNLESS YOU ARE FAMILIAR WITH THESE PARAMETERS
-
-variable "s3_ssl_disable" {
-  type    = bool
-  default = false
+variable "columnstore_node_root_block_size" {
+  description = "Number of GB for EBS root storage on columnstore nodes"
+  type        = number
+  default     = 1000
 }
 
-variable "s3_use_http" {
-  type    = bool
-  default = false
-}
-variable "reboot" {
-  type    = bool
-  default = true
+variable "maxscale_node_root_block_size" {
+  description = "Number of GB for EBS root storage on maxscale nodes"
+  type        = number
+  default     = 100
 }
 
-variable "s3_ssl_disable" {
-  type    = bool
-  default = false
+# Prefix of the cluster to standup - Any Name You Want
+variable "deployment_prefix" {
+  type    = string
+  default = "testing"
 }
 
-variable "s3_use_http" {
-  type    = bool
-  default = false
+variable "additional_tags" {
+  description = "Additional tags to apply to resources"
+  type        = map(string)
+  default     = {
+    description = "testing columnstore"
+  }
 }
 
 variable "s3_domain" {
   type    = string
   default = "amazonaws.com"
+}
+
+
+variable "s3_ssl_disable" {
+  type    = bool
+  default = false
+}
+
+variable "s3_use_http" {
+  type    = bool
+  default = false
+}
+
+######## Optional Install Options
+
+variable "reboot" {
+  type    = bool
+  default = true
+}
+
+# Optional - Requires "mariadb_rpms_path" to be defined - Argumemts for cs_package_manager to auto download rpms 
+variable "cs_package_manager_custom_version" {
+  type    = string
+  default = ""
+}
+
+# The path mariadb and columnstore rpms are preloaded to after terraform apply --auto-approve, but before running ansible
+variable "mariadb_rpms_path" {
+  type    = string
+  default = ""
 }

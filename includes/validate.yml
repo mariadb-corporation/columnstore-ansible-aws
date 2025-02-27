@@ -39,6 +39,9 @@
     shell: mariadb -sN -e "SELECT id FROM cs_validation.mock_data ORDER BY id DESC LIMIT 1;"
     register: mariadb_result
 
+  - debug:
+      var: mariadb_result.stdout
+
   - name: "Validation Has Failed!"
     command: /bin/false
     when: mariadb_result.stdout != '10'

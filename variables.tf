@@ -97,16 +97,10 @@ variable "maxscale_version" {
 }
 
 ######## AWS CONFIGURATION 
-
-variable "key_pair_name" {
-  type    = string
-  default = "YOUR AWS KEY PAIR NAME HERE"
-}
-
-variable "ssh_key_file" {
-  type    = string
-  default = "/PATH/TO/KEY/FILE.PEM"
-}
+# Possible Authentication Combinations (leave unused variables = "")
+# 1) aws_access_key + aws_secret_key
+# 2) aws_access_key + aws_secret_key + aws_session_token
+# 3) aws_profile
 
 variable "aws_access_key" {
   type    = string
@@ -116,6 +110,26 @@ variable "aws_access_key" {
 variable "aws_secret_key" {
   type    = string
   default = "YOUR AWS SECRET KEY HERE"
+}
+
+variable "aws_session_token" {
+  type    = string
+  default = "YOUR AWS SESSION TOKEN HERE"
+}
+
+variable "aws_profile" {
+  type    = string
+  default = "YOUR AWS PROFILE NAME KEY HERE"
+}
+
+variable "key_pair_name" {
+  type    = string
+  default = "YOUR AWS KEY PAIR NAME HERE"
+}
+
+variable "ssh_key_file" {
+  type    = string
+  default = "/PATH/TO/KEY/FILE.PEM"
 }
 
 # aws_region will influence aws_vpc, aws_subnet, aws_zone & aws_ami

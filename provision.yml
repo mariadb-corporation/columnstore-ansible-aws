@@ -30,9 +30,9 @@
 - name: "Preparing The Servers"
   import_playbook: includes/prepare.yml
 
-- name: "Setting Up GFS2"
-  import_playbook: includes/gfs2.yml
-  when: use_s3
+# - name: "Setting Up GFS2"
+#   import_playbook: includes/gfs2.yml
+#   when: use_s3
 
 - name: "Configuring NVMe and Symlinks"
   import_playbook: includes/configure_nvme.yml

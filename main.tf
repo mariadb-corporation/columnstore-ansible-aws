@@ -1,11 +1,13 @@
 provider "aws" {
   region     = var.aws_region
-  access_key = var.aws_access_key
-  secret_key = var.aws_secret_key
+  access_key = var.aws_access_key != "" ? var.aws_access_key : null
+  secret_key = var.aws_secret_key != "" ? var.aws_secret_key : null
+  token = var.aws_session_token != "" ? var.aws_session_token : null
+  profile = var.aws_profile != "" ? var.aws_profile : null
 }
 
 resource "aws_security_group" "mcs_traffic" {
-  name   = "${var.deployment_prefix}${var.security_group_name}"
+  name   = "${var.deployment_prefix}_${var.security_group_name}"
   vpc_id = var.aws_vpc
 
   ingress {
@@ -48,7 +50,7 @@ resource "aws_security_group" "mcs_traffic" {
   }
 
   tags = {
-    Name = "mcs_traffic"
+    Name = "${var.deployment_prefix}_${var.security_group_name}"
   }
 }
 
@@ -77,6 +79,7 @@ resource "aws_instance" "columnstore_node" {
 resource "aws_instance" "maxscale_instance" {
   count             = var.num_maxscale_instances
   ami               = var.aws_ami
+  subnet_id         = var.aws_subnet
   availability_zone = var.aws_zone
   instance_type     = var.aws_maxscale_instance_size
   key_name          = var.key_pair_name

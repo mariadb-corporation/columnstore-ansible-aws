@@ -9,3 +9,8 @@ nocows = 1
 private_key_file = ${ssh_key_file}
 remote_user = mariadb
 timeout = 600
+pipelining = True
+forks=50
+
+[ssh_connection]
+ssh_args = -o ControlMaster=auto -o ControlPersist=60s

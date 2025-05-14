@@ -1,18 +1,16 @@
-mcs1 ansible_host=mcs1.mydomain.com
-mcs2 ansible_host=mcs2.mydomain.com
-mx1 ansible_host=mx1.mydomain.com
-mx2 ansible_host=mx2.mydomain.com
-
-mcs1_private ansible_host=mcs1.internal
-mcs2_private ansible_host=mcs2.internal
-mx1_private ansible_host=mx1.internal
-mx2_private ansible_host=mx2.internal
+# [name] [public_dns] [private_dns] [private_ip] [instance_id(optional)]
+mcs1 ansible_host=mcs1.publicdomain.com private_dns=mcs1.internal private_ip=172.31.24.152 instance_id=i-094bca461d1c349b2
+mcs2 ansible_host=mcs2.publicdomain.com private_dns=mcs2.internal private_ip=172.31.23.53 instance_id=i-047aedca512a487dd
+mcs3 ansible_host=mcs2.publicdomain.com private_dns=mcs3.internal private_ip=172.31.28.174 instance_id=i-032a1af633fc1e43c
+mx1 ansible_host=mx1.publicdomain.com private_dns=mx1.internal private_ip=172.31.26.217 instance_id=i-01475b21ee1cca3b2
+mx2 ansible_host=mx2.publicdomain.com private_dns=mx2.internal private_ip=172.31.23.117 instance_id=i-0261aa893037d8acc
 
 [primary]
 mcs1
 
 [replicas]
 mcs2
+mcs3
 
 [maxscale]
 mx1

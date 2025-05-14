@@ -5,23 +5,37 @@
   become_user: root
   vars_files:
     - '../inventory/group_vars/distro/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}.yml'
+    - '../inventory/group_vars/all.yml'
 
   tasks:
 
-  - name: "Getting MariaDB Enterprise Repo Setup Script"
+  - name: "Ensure MariaDB RPMs directory exists"
+    file:
+      path: "{{ mariadb_rpms_path }}"
+      state: directory
+      mode: '0755'
+      
+  - name: "Check if MariaDB RPMs directory exists"
+    stat:
+      path: "{{ mariadb_rpms_path }}"
+    register: rpm_dir
+
+  - name: "Fail if MariaDB RPMs directory does not exist"
+    fail:
+      msg: "The directory {{ mariadb_rpms_path }} does not exist."
+    when: not rpm_dir.stat.exists
+
+  - name: "Debug cs_package_manager_custom_version"
+    debug:
+      var: cs_package_manager_custom_version
+    when: cs_package_manager_custom_version is defined and cs_package_manager_custom_version != "" and cs_package_manager_custom_version is not none
+
+  - name: "Download cs_package_manager script"
     get_url:
-      url: https://dlm.mariadb.com/enterprise-release-helpers/mariadb_es_repo_setup
-      dest: /usr/local/bin/mariadb_es_repo_setup
-      mode: 'a+x'
-
-  - name: "Adding MariaDB Enterprise Repo Script Dependency"
-    apt:
-      name: apt-transport-https
-      state: present
-    when: ansible_distribution|lower == 'ubuntu'
-
-  - name: "Setting Up MariaDB Enterprise Repo"
-    command: /usr/local/bin/mariadb_es_repo_setup --token={{ enterprise_token }} --mariadb-server-version='{{ mariadb_version }}' --mariadb-maxscale-version='{{ maxscale_version }}' --apply
+      url: "https://raw.githubusercontent.com/mariadb-corporation/mariadb-columnstore-engine/refs/heads/cs_package_manager_v3.5/cmapi/scripts/cs_package_manager.sh"
+      dest: "{{ mariadb_rpms_path }}/cs_package_manager.sh"
+      mode: '0755'
+    when: cs_package_manager_custom_version is defined and cs_package_manager_custom_version != "" and cs_package_manager_custom_version is not none
 
 - hosts: "primary,replicas"
   become: yes
@@ -29,18 +43,57 @@
   vars_files:
     - '../inventory/group_vars/distro/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}.yml'
     - '../inventory/group_vars/all.yml'
-
+    
   tasks:
 
-  - name: "Installing MariaDB Items"
-    package:
-      name: '{{ item }}'
+  - name: "Download MariaDB RPMs using cs_package_manager script"
+    command: bash {{ mariadb_rpms_path }}/cs_package_manager.sh {{ cs_package_manager_custom_version }} --directory {{ mariadb_rpms_path }} 
+    register: cs_package_manager_output
+    when: cs_package_manager_custom_version is defined and cs_package_manager_custom_version != "" and cs_package_manager_custom_version is not none
+
+  - name: "cs_package_manager output"
+    debug:
+      msg: "{{ cs_package_manager_output.stdout }}"
+    when: cs_package_manager_custom_version is defined and cs_package_manager_custom_version != "" and cs_package_manager_custom_version is not none and cs_package_manager_output is defined
+
+  - name: "cs_package_manager errors"
+    debug:
+      msg: "{{ cs_package_manager_output.stderr }}"
+    when: cs_package_manager_custom_version is defined and cs_package_manager_custom_version != "" and cs_package_manager_custom_version is not none and cs_package_manager_output is defined and cs_package_manager_output.stderr != ""
+
+  - name: "Check for RPM or DEB files in the directory"
+    find:
+      paths: "{{ mariadb_rpms_path }}"
+      patterns: "*.rpm,*.deb"
+      use_regex: false
+    register: rpm_files
+
+  - name: "Fail if no RPM or DEB files are found in the directory"
+    fail:
+      msg: "The directory {{ mariadb_rpms_path }} does not contain any .rpm or .deb files."
+    when: rpm_files.matched == 0
+
+  - name: "Debug list of RPM or DEB file paths found"
+    debug:
+      msg: "{{ rpm_files.files | map(attribute='path') | list }}"
+
+  - name: "Installing MariaDB RPMs from directory"
+    yum:
+      name: "{{ rpm_files.files | map(attribute='path') | join(',') }}"
       state: present
-      update_cache: yes
-    with_items:
-      - '{{ mariadb_client }}'
-      - '{{ mariadb_server }}'
-      - '{{ mariadb_columnstore }}'
+      disable_gpg_check: yes
+    when:
+      - ansible_os_family == "RedHat"
+      - rpm_files.matched > 0
+
+  - name: "Installing MariaDB DEBs from directory"
+    apt:
+      deb: "{{ rpm_files.files | map(attribute='path') | join(',') }}"
+      state: present
+      disable_gpg_check: yes
+    when:
+      - ansible_os_family == "Debian"
+      - rpm_files.matched > 0
 
   - name: "Configuring Storagemanager Service"
     replace:
@@ -188,11 +241,41 @@
 
   tasks:
 
-  - name: "Installing MaxScale Items"
-    package:
-      name: '{{ item }}'
+  # Adjust to download maxscale rpm
+  # - name: "Download MariaDB RPMs using cs_package_manager script"
+  #   command: bash {{ mariadb_rpms_path }}/cs_package_manager.sh {{ cs_package_manager_custom_version }} --directory {{ mariadb_rpms_path }}
+  #   when: cs_package_manager_custom_version is defined and cs_package_manager_custom_version != ""
+
+  - name: "Check for RPM or DEB files in the directory"
+    find:
+      paths: "{{ mariadb_rpms_path }}"
+      patterns: "*.rpm,*.deb"
+      use_regex: false
+    register: rpm_files
+
+  - name: "Fail if no RPM or DEB files are found in the directory"
+    fail:
+      msg: "The directory {{ mariadb_rpms_path }} does not contain any .rpm or .deb files."
+    when: rpm_files.matched == 0
+
+  - name: "Debug list of RPM or DEB file paths found"
+    debug:
+      msg: "{{ rpm_files.files | map(attribute='path') | list }}"
+ 
+  - name: "Installing MariaDB RPMs from directory for maxscale"
+    yum:
+      name: "{{ rpm_files.files | map(attribute='path') | join(',') }}"
       state: present
-      update_cache: yes
-    with_items:
-      - '{{ mariadb_client }}'
-      - '{{ maxscale }}'
+      disable_gpg_check: yes
+    when:
+      - ansible_os_family == "RedHat"
+      - rpm_files.matched > 0
+
+  - name: "Installing MariaDB DEBs from directory for maxscale"
+    apt:
+      deb: "{{ rpm_files.files | map(attribute='path') | join(',') }}"
+      state: present
+      disable_gpg_check: yes
+    when:
+      - ansible_os_family == "Debian"
+      - rpm_files.matched > 0

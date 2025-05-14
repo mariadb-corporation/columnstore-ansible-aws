@@ -16,7 +16,7 @@ mariadb_columnstore_cmapi: mariadb-columnstore-cmapi
 mariadb_repo: /etc/apt/sources.list.d/mariadb.list
 mariadb_server: mariadb-server
 mariadb_socket: /run/mysqld/mysqld.sock
-maxscale: maxscale
+maxscale: maxscale-enterprise
 mlocate: mlocate
 nano: nano
 nfs_utils: nfs-client

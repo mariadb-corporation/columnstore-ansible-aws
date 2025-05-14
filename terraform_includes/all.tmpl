@@ -1,20 +1,6 @@
 ---
 
 # Project Components
-use_s3: ${use_s3}
-
-# AWS Configuration
-aws_region: ${aws_region}
-aws_zone: ${aws_zone}
-
-# Storage Manager Configuration
-s3_access_key_id: ${aws_access_key}
-s3_secret_access_key: ${aws_secret_key}
-s3_endpoint: s3.${aws_region}.${s3_domain}
-s3_bucket: ${s3_bucket}
-s3_use_http: ${s3_use_http}
-s3_ssl_disable: ${s3_ssl_disable}
-s3_port:
 
 # Version Configuration
 mariadb_version: ${mariadb_version}
@@ -24,7 +10,17 @@ maxscale_version: ${maxscale_version}
 enterprise_token: ${mariadb_enterprise_token}
 
 # Columnstore Settings
+use_s3: ${use_s3}
 api_key: ${cmapi_key}
+
+# Storage Manager Configuration
+s3_access_key_id: ${aws_access_key}
+s3_secret_access_key: ${aws_secret_key}
+s3_endpoint: s3.${aws_region}.${s3_domain}
+s3_bucket: ${s3_bucket}
+s3_use_http: ${s3_use_http}
+s3_ssl_disable: ${s3_ssl_disable}
+s3_port:
 
 # Database Credentials
 admin_user: ${admin_user}
@@ -36,19 +32,17 @@ maxscale_pass: ${maxscale_pass}
 repli_user: ${repli_user}
 repli_pass: ${repli_pass}
 
+# AWS Configuration
+aws_region: ${aws_region}
+aws_zone: ${aws_zone}
+aws_mariadb_instance_size: ${aws_mariadb_instance_size}
+aws_maxscale_instance_size: ${aws_maxscale_instance_size}
+mariadb_has_nvme: ${mariadb_has_nvme}
+
 # PCS Credentials
 pcs_pass: ${pcs_pass}
 
-# Private IPs
-mcs1_private: ${privateip1}
-mcs2_private: ${privateip2}
-mcs3_private: ${privateip3}
-mx1_private: ${privateip4}
-mx2_private: ${privateip5}
-
-# Instance IDs
-mcs1_id: ${id1}
-mcs2_id: ${id2}
-mcs3_id: ${id3}
-mx1_id: ${id4}
-mx2_id: ${id5}
+# Install Options
+mariadb_rpms_path: ${mariadb_rpms_path}
+cs_package_manager_custom_version: ${cs_package_manager_custom_version}
+reboot: ${reboot}

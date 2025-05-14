@@ -10,7 +10,7 @@
 
   - name: "Setting Facts"
     set_fact:
-      first_octet: "{{ mcs1_private.split('.')[0:1][0] }}.%"
+      first_octet: "{{ (hostvars['mcs1'].private_ip).split('.')[0:1][0] }}.%"
 
   - name: "Turn Off Strict Password"
     mysql_variables:
@@ -22,6 +22,14 @@
   - name: "Removing 'Test' Database If Exists"
     mysql_db:
       name: test
+      state: absent
+      login_unix_socket: '{{ mariadb_socket }}'
+    no_log: true
+  
+  - name: "Remove admin_user if exists"
+    mysql_user:
+      name: '{{ admin_user }}'
+      host: '%'
       state: absent
       login_unix_socket: '{{ mariadb_socket }}'
     no_log: true
@@ -37,6 +45,14 @@
       login_unix_socket: '{{ mariadb_socket }}'
     no_log: true
 
+  - name: "Remove cej_user if exists"
+    mysql_user:
+      name: '{{ cej_user }}'
+      host: '127.0.0.1'
+      state: absent
+      login_unix_socket: '{{ mariadb_socket }}'
+    no_log: true
+
   - name: "Adding '{{ cej_user }}'@'127.0.0.1' User To Database"
     mysql_user:
       name: '{{ cej_user }}'
@@ -48,6 +64,13 @@
       login_unix_socket: '{{ mariadb_socket }}'
     no_log: true
 
+  - name: "Remove maxscale_user if exists"
+    mysql_user:
+      name: '{{ maxscale_user }}'
+      host: '{{ first_octet }}'
+      state: absent
+      login_unix_socket: '{{ mariadb_socket }}'
+
   - name: "Adding '{{ maxscale_user }}'@'{{ first_octet }}' User To Database"
     mysql_user:
       name: '{{ maxscale_user }}'
@@ -56,6 +79,14 @@
       update_password: on_create
       priv: '*.*:SHOW DATABASES,BINLOG ADMIN,READ_ONLY ADMIN,RELOAD,REPLICATION MASTER ADMIN,REPLICATION SLAVE ADMIN,REPLICATION SLAVE,SLAVE MONITOR/mysql.*:SELECT'
       state: present
+      login_unix_socket: '{{ mariadb_socket }}'
+    no_log: true
+
+  - name: "Remove repli_user if exists"
+    mysql_user:
+      name: '{{ repli_user }}'
+      host: '{{ first_octet }}'
+      state: absent
       login_unix_socket: '{{ mariadb_socket }}'
     no_log: true
 
@@ -109,7 +140,7 @@
   - name: "Setting Primary Info"
     mysql_replication:
       mode: changeprimary
-      master_host: '{{ mcs1_private }}'
+      master_host: "{{ hostvars['mcs1'].private_ip }}"
       master_user: '{{ repli_user }}'
       master_password: '{{ repli_pass }}'
       login_unix_socket: '{{ mariadb_socket }}'
@@ -131,9 +162,30 @@
 
   tasks:
 
+  # - name: "Fetch existing nodes in the cluster"
+  #   uri:
+  #     url: "https://{{ hostvars['mcs1'].ansible_host }}:8640/cmapi/0.4.0/cluster/status"
+  #     method: GET
+  #     headers:
+  #       Content-Type: application/json
+  #       x-api-key: "{{ api_key }}"
+  #     validate_certs: no
+  #     return_content: yes
+  #     status_code: 200
+  #   register: cluster_info
+
+  # - name: "Debug: Print existing nodes in the cluster"
+  #   debug:
+  #     msg: "{{ cluster_info.json }}"
+
+  # - name: "Remove existing nodes from the cluster"
+  #   shell: mcs cluster node remove --node {{ item.key }}
+  #   with_dict: "{{ cluster_info.json }}"
+  #   when: cluster_info.json['num_nodes'] | int > 0
+  
   - name: "Adding Nodes To ColumnStore Cluster"
     uri:
-      url: https://{{ hostvars.mcs1_private.ansible_host }}:8640/cmapi/0.4.0/cluster/node
+      url: "https://{{ hostvars['mcs1'].ansible_host }}:8640/cmapi/0.4.0/cluster/node"
       method: PUT
       headers:
         Content-Type: application/json
@@ -142,9 +194,9 @@
       return_content: yes
       status_code: 200
       body_format: json
-      body: "{{ item }}"
+      body:
+        timeout: 120
+        node: "{{ hostvars[item].private_dns }}"
       timeout: 180
-    loop:
-        - {"timeout":180, "node":"{{ hostvars.mcs1_private.ansible_host }}"}
-        - {"timeout":180, "node":"{{ hostvars.mcs2_private.ansible_host }}"}
-        - {"timeout":180, "node":"{{ hostvars.mcs3_private.ansible_host }}"}
+    with_items: "{{ groups['all'] | reject('search', '^mx') | list }}"
+ 

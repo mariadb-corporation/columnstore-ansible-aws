@@ -1,22 +1,20 @@
-mcs1 ansible_host=${publicdns1}
-mcs2 ansible_host=${publicdns2}
-mcs3 ansible_host=${publicdns3}
-mx1 ansible_host=${publicdns4}
-mx2 ansible_host=${publicdns5}
-
-mcs1_private ansible_host=${privatedns1}
-mcs2_private ansible_host=${privatedns2}
-mcs3_private ansible_host=${privatedns3}
-mx1_private ansible_host=${privatedns4}
-mx2_private ansible_host=${privatedns5}
+# [name] [public_dns] [private_dns] [private_ip] [ec2 instance_id(optional)]
+%{ for node in columnstore_nodes ~}
+${node.name} ansible_host=${node.public_dns} private_dns=${node.private_dns} private_ip=${node.private_ip} instance_id=${node.id}
+%{ endfor ~}
+%{ for node in maxscale_nodes ~}
+${node.name} ansible_host=${node.public_dns} private_dns=${node.private_dns} private_ip=${node.private_ip} instance_id=${node.id}
+%{ endfor ~}
 
 [primary]
 mcs1
 
 [replicas]
-mcs2
-mcs3
+%{ for i in range(1, length(columnstore_nodes)) ~}
+${columnstore_nodes[i].name}
+%{ endfor ~}
 
 [maxscale]
-mx1
-mx2
+%{ for node in maxscale_nodes ~}
+${node.name}
+%{ endfor ~}

@@ -4,8 +4,16 @@
   become: yes
   become_user: root
   vars_files:
+    - '../inventory/group_vars/all.yml'
     - '../inventory/group_vars/distro/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}.yml'
+  
+  pre_tasks:
 
+  - name: "Check instance type"
+    set_fact:
+      mariadb_is_metal: "{{ aws_mariadb_instance_size is search('\\.metal$') }}"
+      maxscale_is_metal: "{{ aws_maxscale_instance_size is search('\\.metal$') }}"
+  
   tasks:
 
   - name: "Scanning For Running Services"
@@ -44,9 +52,15 @@
       name: '*'
       state: latest
       update_cache: yes
+  
+  - name: "Set reboot to false if mariadb_is_metal or maxscale_is_metal is true"
+    set_fact:
+      reboot: false
+    when: mariadb_is_metal or maxscale_is_metal
 
   - name: "Rebooting To Apply Updates"
     reboot:
+    when: reboot
 
   - name: "Installing Some Prerequisites"
     package:

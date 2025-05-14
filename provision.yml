@@ -10,7 +10,7 @@
   tasks:
     - name: "Waiting For Servers To Initialize"
       wait_for_connection:
-
+    
 ## Bootstrap For Ansible
 
 - hosts: "primary,replicas,maxscale"
@@ -19,6 +19,7 @@
   gather_facts: yes
   vars_files:
     - 'inventory/group_vars/distro/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}.yml'
+    - 'inventory/group_vars/all.yml'
 
   pre_tasks:
     - name: "Bootstrapping System For Ansible"
@@ -29,11 +30,21 @@
 - name: "Preparing The Servers"
   import_playbook: includes/prepare.yml
 
-- name: "Setting Up GFS2"
-  import_playbook: includes/gfs2.yml
+# - name: "Setting Up GFS2"
+#   import_playbook: includes/gfs2.yml
+#   when: use_s3
+
+- name: "Configuring NVMe and Symlinks"
+  import_playbook: includes/configure_nvme.yml
+  when: mariadb_has_nvme
+
+- name: "Install MariaDB RPMs"
+  import_playbook: includes/install_rpms.yml
+  when: mariadb_rpms_path is defined and mariadb_rpms_path != "" and mariadb_rpms_path is not none
 
 - name: "Installing MariaDB"
   import_playbook: includes/install.yml
+  when: mariadb_rpms_path is not defined or mariadb_rpms_path == "" or mariadb_rpms_path is none
 
 - name: "Setting Up ColumnStore Cluster"
   import_playbook: includes/cluster.yml

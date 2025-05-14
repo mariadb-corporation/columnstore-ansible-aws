@@ -1,20 +1,18 @@
 ---
 
 awscli: awscli
-boto: python-boto3
+boto: python3-boto3
 columnstore_cnf: /etc/my.cnf.d/columnstore.cnf
-dlm_lib: dlm_lib
-dlm: dlm
+dlm: https://repo.cloudlinux.com/cloudlinux/8.3/BaseOS/x86_64/os/Packages/dlm-4.0.9-3.el8.x86_64.rpm
+dlm_lib: https://repo.cloudlinux.com/cloudlinux/8.3/BaseOS/x86_64/os/Packages/dlm-lib-4.0.9-3.el8.x86_64.rpm
 fence_agent: fence-agents-aws
 gcc: gcc
 gfs2: gfs2-utils
 git: git
-gluster_repo: centos-release-gluster7
-gluster_server: glusterfs-server
 htop: htop
 jemalloc: jemalloc
 jq: jq
-lvm2: lvm2-cluster
+lvm2: lvm2-lockd
 mariadb_backup: MariaDB-backup
 mariadb_client: MariaDB-client
 mariadb_columnstore_cmapi: MariaDB-columnstore-cmapi
@@ -27,11 +25,11 @@ mariadb_socket: /var/lib/mysql/mysql.sock
 maxscale: maxscale-enterprise
 mlocate: mlocate
 nano: nano
-pcp_zeroconf: pcp-zeroconf
 pcs: pcs
-pre_task: yum -y install epel-release && yum -y install python3 & yum -y install glibc-locale-source glibc-langpack-en
-python_dev: python2-devel
-python_mysql: python2-PyMySQL,python3-PyMySQL
+pcp_zeroconf: pcp-zeroconf
+pre_task: dnf -y install epel-release && dnf -y install glibc-locale-source glibc-langpack-en python3 libxcrypt-compat
+python_dev: platform-python-devel
+python_mysql: python3-PyMySQL
 python_requests: python3-requests
 server_cnf: /etc/my.cnf.d/server.cnf
 storagemanager_cnf: /etc/columnstore/storagemanager.cnf

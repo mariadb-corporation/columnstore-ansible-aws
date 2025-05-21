@@ -21,7 +21,7 @@ This is a [Terraform](https://www.terraform.io/) and [Ansible](https://www.ansib
 *   [Install Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html#installing-ansible-with-pip) *<sup>‡</sup>*
 *   [MariaDB Enterprise Token](https://customers.mariadb.com/downloads/token/)
 
-*<sup>†</sup> Requires Terraform v0.14.4 or above.*  
+*<sup>†</sup> Requires Terraform v0.14.4 or above.*
 *<sup>‡</sup> Requires Full Ansible 2.10.5 or above. (Not Ansible-Core)*
 
 ## Instructions:
@@ -30,11 +30,12 @@ Open a terminal window and clone the repository:
 
 1.  `git clone https://github.com/mariadb-corporation/columnstore-ansible.git`
 2.  `cd` into the newly cloned folder
-3.  Edit [variables.tf](variables.tf) and supply your own variables.
-4.  `terraform init`
-5.  `terraform plan` (Optional)
-6.  `terraform apply --auto-approve`
-7.  `ansible-playbook provision.yml`
+3.  `cp .tfvars.sample terraform.tfvars` This file contains the values for the variables used in the Terraform configuration.
+4.  Edit `terraform.tfvars` and supply your own variable values. See `variables.tf` for variable descriptions.
+5.  `terraform init`
+6.  `terraform plan` (Optional)
+7.  `terraform apply --auto-approve`
+8.  `ansible-playbook provision.yml`
 
 Further information can be found on our [official deployment guide](https://mariadb.com/docs/deploy/enterprise-multi-columnstore/).
 

@@ -2,8 +2,6 @@
 ########
 ########  * VPCs
 ########  * Programmatic Access
-########
-######## Grab your enterprise token from the MariaDB website (https://customers.mariadb.com/downloads/token/).
 
 ######## EDIT THESE ITEMS
 
@@ -15,59 +13,70 @@ variable "use_s3" {
 
 variable "mariadb_enterprise_token" {
   type    = string
-  default = "YOUR MARIADB ENTERPRISE TOKEN HERE"
+  description = "MariaDB Enterprise Token (https://customers.mariadb.com/downloads/token/)"
+  nullable = false
 }
 
 variable "cmapi_key" {
   type    = string
-  default = "CREATE A COLUMNSTORE API KEY HERE - ANY RANDOM STRING"
+  description = "Columnstore API Key (any random string)"
+  nullable = false
 }
 
 variable "pcs_pass" {
   type    = string
-  default = "SET PCS CLUSTER PASSWORD HERE - ANY RANDOM STRING"
+  description = "PCS Cluster Password (any random string)"
+  nullable = false
 }
 
 ######## DATABASE CREDENTIALS
 
 variable "admin_user" {
   type    = string
-  default = "CHOOSE A MARIADB ADMIN USERNAME HERE"
+  description = "MariaDB Admin Username"
+  nullable = false
 }
 
 variable "admin_pass" {
   type    = string
-  default = "SET YOUR MARIADB ADMIN USER PASSWORD HERE"
+  description = "MariaDB Admin Password (any random string)"
+  nullable = false
 }
 
 variable "maxscale_user" {
   type    = string
-  default = "CHOOSE A MAXSCALE USERNAME HERE"
+  description = "MaxScale Username"
+  nullable = false
 }
 
 variable "maxscale_pass" {
   type    = string
-  default = "SET YOUR MAXSCALE USER PASSWORD HERE"
+  description = "MaxScale Password (any random string)"
+  nullable = false
 }
 
 variable "repli_user" {
   type    = string
-  default = "CHOOSE A REPLICA USERNAME HERE"
+  description = "Replica Username"
+  nullable = false
 }
 
 variable "repli_pass" {
   type    = string
-  default = "SET YOUR REPLICA USER PASSWORD HERE"
+  description = "Replica Password (any random string)"
+  nullable = false
 }
 
 variable "cej_user" {
   type    = string
-  default = "CHOOSE A COLUMNSTORE UTILITY USERNAME HERE"
+  description = "Columnstore Utility Username"
+  nullable = false
 }
 
 variable "cej_pass" {
   type    = string
-  default = "SET YOUR COLUMNSTORE UTILITY USER PASSWORD HERE"
+  description = "Columnstore Utility Password (any random string)"
+  nullable = false
 }
 
 ######## Cluster Size
@@ -88,15 +97,17 @@ variable "num_maxscale_instances" {
 
 variable "mariadb_version" {
   type    = string
+  description = "MariaDB Server Version"
   default = "11.4"
 }
 
 variable "maxscale_version" {
   type    = string
+  description = "MaxScale Version"
   default = "latest"
 }
 
-######## AWS CONFIGURATION 
+######## AWS CONFIGURATION
 # Possible Authentication Combinations (leave unused variables = "")
 # 1) aws_access_key + aws_secret_key
 # 2) aws_access_key + aws_secret_key + aws_session_token
@@ -104,62 +115,71 @@ variable "maxscale_version" {
 
 variable "aws_access_key" {
   type    = string
-  default = "YOUR AWS ACCESS KEY HERE"
+  description = "AWS Access Key"
+  default = ""
 }
 
 variable "aws_secret_key" {
   type    = string
-  default = "YOUR AWS SECRET KEY HERE"
+  description = "AWS Secret Key"
+  default = ""
 }
 
 variable "aws_session_token" {
   type    = string
-  default = "YOUR AWS SESSION TOKEN HERE"
+  description = "AWS Session Token"
+  default = ""
 }
 
 variable "aws_profile" {
   type    = string
-  default = "YOUR AWS PROFILE NAME KEY HERE"
+  description = "AWS Profile Name"
+  default = ""
 }
 
 variable "key_pair_name" {
   type    = string
-  default = "YOUR AWS KEY PAIR NAME HERE"
+  description = "AWS Key Pair Name"
+  nullable = false
 }
 
 variable "ssh_key_file" {
   type    = string
-  default = "/PATH/TO/KEY/FILE.PEM"
+  description = "Path to SSH key file"
+  nullable = false
 }
 
-# aws_region will influence aws_vpc, aws_subnet, aws_zone & aws_ami
 variable "aws_region" {
   type    = string
+  description = "AWS Region, will influence aws_vpc, aws_subnet, aws_zone & aws_ami"
   default = "us-west-2"
 }
 
 variable "aws_zone" {
   type    = string
+  description = "AWS Zone"
   default = "us-west-2a"
 }
 
 # Confirm your VPC exists in aws_region choosen
 variable "aws_vpc" {
   type    = string
-  default = "YOUR AWS VPC ID HERE"
+  description = "AWS VPC ID"
+  nullable = false
 }
 
 # Confirm your subnet exists in aws_vpc choosen
 variable "aws_subnet" {
   type    = string
-  default = "YOUR AWS SUBNET ID HERE"
+  description = "AWS Subnet ID"
+  nullable = false
 }
 
-######## AWS EC2 Options 
+######## AWS EC2 Options
 
-# AMI's are specific to regions
 variable "aws_ami" {
   type    = string
+  description = "AWS AMI ID, AMI's are specific to regions"
   default = "ami-0faa73a0256c330e9"
 }
 
@@ -227,7 +247,7 @@ variable "reboot" {
   default = true
 }
 
-# Optional - Requires "mariadb_rpms_path" to be defined - Argumemts for cs_package_manager to auto download rpms 
+# Optional - Requires "mariadb_rpms_path" to be defined - Arguments for cs_package_manager to auto download rpms
 variable "cs_package_manager_custom_version" {
   type    = string
   default = ""

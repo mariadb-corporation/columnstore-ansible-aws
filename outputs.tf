@@ -10,9 +10,24 @@ output "ansible_config" {
   value = local_file.AnsibleConfig.filename
 }
 
+output "columnstore_nodes" {
+  description = "Details of the columnstore nodes"
+  value = local.columnstore_nodes
+}
+
+output "maxscale_nodes" {
+  description = "Details of the maxscale nodes"
+  value = local.maxscale_nodes
+}
+
+output "ssh_key_file" {
+  description = "Path to SSH key file"
+  value = var.ssh_key_file
+}
+
 locals {
   columnstore_nodes = [
-    for i in range(0, length(aws_instance.columnstore_node)) : 
+    for i in range(0, length(aws_instance.columnstore_node)) :
     {
       name        = "mcs${i+1}"
       public_dns  = aws_instance.columnstore_node[i].public_dns
@@ -23,7 +38,7 @@ locals {
   ]
 
   maxscale_nodes = [
-    for i in range(0, length(aws_instance.maxscale_instance)) : 
+    for i in range(0, length(aws_instance.maxscale_instance)) :
     {
       name        = "mx${i+1}"
       public_dns  = aws_instance.maxscale_instance[i].public_dns

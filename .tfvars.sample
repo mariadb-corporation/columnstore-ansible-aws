@@ -1,0 +1,108 @@
+######## This is a sample file. Copy to a file named .tfvars and edit values for your environment.
+
+######## EDIT THESE ITEMS
+
+# Determines if Columnstore LocalStorage or S3 Topology
+use_s3 = true
+
+# Grab your enterprise token from the MariaDB website (https://customers.mariadb.com/downloads/token/)
+mariadb_enterprise_token = "YOUR MARIADB ENTERPRISE TOKEN HERE"
+
+# Create a random string for the columnstore API key
+cmapi_key = "CREATE A COLUMNSTORE API KEY HERE - ANY RANDOM STRING"
+
+# Set a password for the PCS cluster
+pcs_pass = "SET PCS CLUSTER PASSWORD HERE - ANY RANDOM STRING"
+
+######## DATABASE CREDENTIALS
+
+# MariaDB admin credentials
+admin_user = "CHOOSE A MARIADB ADMIN USERNAME HERE"
+admin_pass = "SET YOUR MARIADB ADMIN USER PASSWORD HERE"
+
+# MaxScale user credentials
+maxscale_user = "CHOOSE A MAXSCALE USERNAME HERE"
+maxscale_pass = "SET YOUR MAXSCALE USER PASSWORD HERE"
+
+# Replication user credentials
+repli_user = "CHOOSE A REPLICA USERNAME HERE"
+repli_pass = "SET YOUR REPLICA USER PASSWORD HERE"
+
+# Columnstore utility user credentials
+cej_user = "CHOOSE A COLUMNSTORE UTILITY USERNAME HERE"
+cej_pass = "SET YOUR COLUMNSTORE UTILITY USER PASSWORD HERE"
+
+######## Cluster Size
+
+# Number of Columnstore nodes
+num_columnstore_nodes = 3
+
+# Number of MaxScale instances
+num_maxscale_instances = 2
+
+######## MariaDB Versions
+
+mariadb_version = "11.4"
+maxscale_version = "latest"
+
+######## AWS CONFIGURATION
+# Possible Authentication Combinations (leave unused variables = "")
+# 1) aws_access_key + aws_secret_key
+# 2) aws_access_key + aws_secret_key + aws_session_token
+# 3) aws_profile
+aws_access_key = ""
+aws_secret_key = ""
+aws_session_token = ""
+aws_profile = ""
+
+key_pair_name = "YOUR AWS KEY PAIR NAME HERE"
+ssh_key_file = "/PATH/TO/KEY/FILE.PEM"
+
+# aws_region will influence aws_vpc, aws_subnet, aws_zone & aws_ami
+aws_region = "us-west-2"
+aws_zone = "us-west-2a"
+
+# Confirm your VPC exists in aws_region chosen
+aws_vpc = "YOUR AWS VPC ID HERE"
+
+# Confirm your subnet exists in aws_vpc chosen
+aws_subnet = "YOUR AWS SUBNET ID HERE"
+
+######## AWS EC2 Options
+
+# AMI's are specific to regions
+aws_ami = "ami-0faa73a0256c330e9"
+
+security_group_name = "mcs_traffic"
+aws_mariadb_instance_size = "c6a.8xlarge"
+aws_maxscale_instance_size = "c6a.large"
+
+# Number of GB for EBS root storage on columnstore nodes
+columnstore_node_root_block_size = 1000
+
+# Number of GB for EBS root storage on maxscale nodes
+maxscale_node_root_block_size = 100
+
+# Prefix of the cluster to standup - Any Name You Want
+deployment_prefix = "testing"
+
+# Additional tags to apply to resources
+additional_tags = {
+  description = "testing columnstore"
+}
+
+# S3 Configuration
+s3_domain = "amazonaws.com"
+s3_ssl_disable = false
+s3_use_http = false
+
+######## Optional Install Options
+
+reboot = true
+
+# Optional - Requires "mariadb_rpms_path" to be defined
+# Arguments for cs_package_manager to auto download rpms
+cs_package_manager_custom_version = ""
+
+# The path mariadb and columnstore rpms are preloaded to after terraform apply --auto-approve, but before running ansible
+mariadb_rpms_path = ""

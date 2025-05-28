@@ -177,6 +177,8 @@ variable "aws_subnet" {
 
 ######## AWS EC2 Options
 
+# If you are looking for AMIs of official Ubuntu distibutions,
+#  look here: https://cloud-images.ubuntu.com/locator/ec2/
 variable "aws_ami" {
   type    = string
   description = "AWS AMI ID, AMI's are specific to regions"

@@ -9,3 +9,4 @@ destroy.sh
 hosts
 terraform.tfstate*
 variables.bak
+terraform.tfvars

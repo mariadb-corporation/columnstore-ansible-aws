@@ -6,31 +6,31 @@
 use_s3 = true
 
 # Grab your enterprise token from the MariaDB website (https://customers.mariadb.com/downloads/token/)
-mariadb_enterprise_token = "YOUR MARIADB ENTERPRISE TOKEN HERE"
+mariadb_enterprise_token = ""
 
 # Create a random string for the columnstore API key
-cmapi_key = "CREATE A COLUMNSTORE API KEY HERE - ANY RANDOM STRING"
+cmapi_key = "<random>"
 
 # Set a password for the PCS cluster
-pcs_pass = "SET PCS CLUSTER PASSWORD HERE - ANY RANDOM STRING"
+pcs_pass = "<random>"
 
 ######## DATABASE CREDENTIALS
 
 # MariaDB admin credentials
-admin_user = "CHOOSE A MARIADB ADMIN USERNAME HERE"
-admin_pass = "SET YOUR MARIADB ADMIN USER PASSWORD HERE"
+admin_user = "admin"
+admin_pass = "<random>"
 
 # MaxScale user credentials
-maxscale_user = "CHOOSE A MAXSCALE USERNAME HERE"
-maxscale_pass = "SET YOUR MAXSCALE USER PASSWORD HERE"
+maxscale_user = "admin"
+maxscale_pass = "<random>"
 
 # Replication user credentials
-repli_user = "CHOOSE A REPLICA USERNAME HERE"
-repli_pass = "SET YOUR REPLICA USER PASSWORD HERE"
+repli_user = "replication"
+repli_pass = "<random>"
 
 # Columnstore utility user credentials
-cej_user = "CHOOSE A COLUMNSTORE UTILITY USERNAME HERE"
-cej_pass = "SET YOUR COLUMNSTORE UTILITY USER PASSWORD HERE"
+cej_user = "cej"
+cej_pass = "<random>"
 
 ######## Cluster Size
 
@@ -55,23 +55,23 @@ aws_secret_key = ""
 aws_session_token = ""
 aws_profile = ""
 
-key_pair_name = "YOUR AWS KEY PAIR NAME HERE"
-ssh_key_file = "/PATH/TO/KEY/FILE.PEM"
+key_pair_name = ""
+ssh_key_file = ""
 
 # aws_region will influence aws_vpc, aws_subnet, aws_zone & aws_ami
 aws_region = "us-west-2"
 aws_zone = "us-west-2a"
 
 # Confirm your VPC exists in aws_region chosen
-aws_vpc = "YOUR AWS VPC ID HERE"
+aws_vpc = ""
 
 # Confirm your subnet exists in aws_vpc chosen
-aws_subnet = "YOUR AWS SUBNET ID HERE"
+aws_subnet = ""
 
 ######## AWS EC2 Options
 
 # AMI's are specific to regions
-aws_ami = "ami-0faa73a0256c330e9"
+aws_ami = "ami-01f99b4d609a9f41e"
 
 security_group_name = "mcs_traffic"
 aws_mariadb_instance_size = "c6a.8xlarge"
@@ -85,11 +85,6 @@ maxscale_node_root_block_size = 100
 
 # Prefix of the cluster to standup - Any Name You Want
 deployment_prefix = "testing"
-
-# Additional tags to apply to resources
-additional_tags = {
-  description = "testing columnstore"
-}
 
 # S3 Configuration
 s3_domain = "amazonaws.com"
@@ -106,3 +101,7 @@ cs_package_manager_custom_version = ""
 
 # The path mariadb and columnstore rpms are preloaded to after terraform apply --auto-approve, but before running ansible
 mariadb_rpms_path = ""
+
+create_shared_efs = false
+shared_efs_include_dev_host = false
+shared_efs_mount_point = "/shared"

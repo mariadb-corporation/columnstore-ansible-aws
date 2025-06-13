@@ -38,7 +38,7 @@
       user: admin
       password: mariadb
       status_code: 204,404
-    with_items: "{{ groups['all'] | reject('search', '^mx') | list }}"
+    with_items: "{{ groups['all'] | reject('search', '^mx') | reject('equalto', 'devhost') | list }}"
 
   - name: "Adding Servers To MaxScale"
     uri:
@@ -49,25 +49,25 @@
       user: admin
       password: mariadb
       status_code: 204
-    with_items: "{{ groups['all'] | reject('search', '^mx') | list }}"
+    with_items: "{{ groups['all'] | reject('search', '^mx') | reject('equalto', 'devhost') | list }}"
 
   - name: "Adding Monitor To MaxScale"
     uri:
       url: http://127.0.0.1:8989/v1/monitors
       method: POST
       body_format: json
-      body: {"data":{"id":"mcs_monitor","type":"monitors","attributes":{"module":"mariadbmon","parameters":{"user":"{{ maxscale_user }}","password":"{{ maxscale_pass }}","replication_user":"{{ repli_user}}","replication_password":"{{ repli_pass }}","cooperative_monitoring_locks":"majority_of_running","enforce_read_only_slaves":true,"auto_failover":"true","auto_rejoin":true}},"relationships":{"servers":{"data": "{{ groups['all'] | reject('search', '^mx') | map('regex_replace', '^(.*)$', '{\"id\": \"\\1\", \"type\": \"servers\"}') | map('from_json') | list }}" }}}}
+      body: {"data":{"id":"mcs_monitor","type":"monitors","attributes":{"module":"mariadbmon","parameters":{"user":"{{ maxscale_user }}","password":"{{ maxscale_pass }}","replication_user":"{{ repli_user}}","replication_password":"{{ repli_pass }}","cooperative_monitoring_locks":"majority_of_running","enforce_read_only_slaves":true,"auto_failover":"true","auto_rejoin":true}},"relationships":{"servers":{"data": "{{ groups['all'] | reject('search', '^mx') | reject('equalto', 'devhost') | map('regex_replace', '^(.*)$', '{\"id\": \"\\1\", \"type\": \"servers\"}') | map('from_json') | list }}" }}}}
       user: admin
       password: mariadb
       status_code: 204
 
-    
+
   - name: "Adding Service To MaxScale"
     uri:
       url: http://127.0.0.1:8989/v1/services
       method: POST
       body_format: json
-      body: {"data":{"id":"mcs_service","type":"services","attributes":{"router":"readwritesplit","parameters":{"user":"{{ maxscale_user }}","password":"{{ maxscale_pass }}","master_accept_reads":true}},"relationships":{"servers":{"data": "{{ groups['all'] | reject('search', '^mx') | map('regex_replace', '^(.*)$', '{\"id\": \"\\1\", \"type\": \"servers\"}') | map('from_json') | list }}" }}}}
+      body: {"data":{"id":"mcs_service","type":"services","attributes":{"router":"readwritesplit","parameters":{"user":"{{ maxscale_user }}","password":"{{ maxscale_pass }}","master_accept_reads":true}},"relationships":{"servers":{"data": "{{ groups['all'] | reject('search', '^mx') | reject('equalto', 'devhost') | map('regex_replace', '^(.*)$', '{\"id\": \"\\1\", \"type\": \"servers\"}') | map('from_json') | list }}" }}}}
       user: admin
       password: mariadb
       status_code: 204
@@ -86,15 +86,15 @@
 - hosts: "mx1"
   become: yes
   become_user: root
-  
+
   tasks:
 
   - name: "Maxscale GUI"
-    debug: 
+    debug:
       msg: "http://{{ hostvars[inventory_hostname].ansible_host }}:8989"
     tags: debug_info
 
   - name: "Maxscale Status"
-    debug: 
+    debug:
       msg: " curl -X GET -u 'admin:mariadb' http://{{ hostvars[inventory_hostname].ansible_host }}:8989/v1/servers | jq '.data[] | {name: .attributes.name, state: .attributes.state, GTID: .attributes.gtid_current_pos}' "
     tags: debug_info

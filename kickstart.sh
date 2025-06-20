@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # This script is used to fill Terraform variables and generally help set up the Columnstore cluster
 set -e # Exit on errors
 
@@ -129,7 +129,7 @@ set_var_value() {
 
     # If variable is already set, replace it
     if grep -qE "^$var_name\s*=" terraform.tfvars; then
-        sed -i "s|^$var_name\s*=.*|$var_name = \"$var_value\"|" terraform.tfvars
+        sed -i '' "s|^$var_name[[:space:]]*=.*|$var_name = \"$var_value\"|" terraform.tfvars
     else
         echo "$var_name = \"$var_value\"" >> terraform.tfvars
     fi
@@ -274,8 +274,10 @@ select_or_create_aws_profile() {
     fi
 
     echo "Available AWS profiles:"
-    local profiles
-    mapfile -t profiles < <(grep '^\[' ~/.aws/credentials 2>/dev/null | sed 's/^\[\(.*\)\]$/\1/')
+    local profiles=()
+    while IFS= read -r line; do
+        profiles+=("$(echo "$line" | sed 's/^\[\(.*\)\]$/\1/')")
+    done < <(grep '^\[' ~/.aws/credentials 2>/dev/null)
 
     local i=1
     for p in "${profiles[@]}"; do
@@ -381,8 +383,10 @@ choose_aws_key_pair() {
         IFS=$'\t' read -ra aws_keys <<< "$aws_keys_raw"
 
         echo "Searching for local .pem files..."
-        local local_pems
-        mapfile -t local_pems < <(find ~/.ssh . -maxdepth 1 -type f -name "*.pem" 2>/dev/null)
+        local local_pems=()
+        while IFS= read -r pem; do
+            local_pems+=("$pem")
+        done < <(find ~/.ssh . -maxdepth 1 -type f -name "*.pem" 2>/dev/null)
 
         declare -A pem_paths
         for path in "${local_pems[@]}"; do
@@ -480,8 +484,10 @@ check_or_choose_aws_key_pair() {
 choose_or_create_vpc_and_sg() {
     echo ""
     echo "Checking existing VPCs..."
-    local vpcs
-    mapfile -t vpcs < <(aws ec2 describe-vpcs --query 'Vpcs[*].[VpcId,Tags[?Key==`Name`]|[0].Value]' --output text)
+    local vpcs=()
+    while IFS= read -r vpc; do
+        vpcs+=("$vpc")
+    done < <(aws ec2 describe-vpcs --query 'Vpcs[*].[VpcId,Tags[?Key==`Name`]|[0].Value]' --output text)
 
     if [ "${#vpcs[@]}" -eq 0 ]; then
         echo "No VPCs found. You will need to create one."
@@ -513,8 +519,10 @@ choose_or_create_vpc_and_sg() {
 
     # Get or create subnet
     echo "Checking existing subnets in VPC $vpc_id..."
-    local subnets
-    mapfile -t subnets < <(aws ec2 describe-subnets --filters "Name=vpc-id,Values=$vpc_id" \
+    local subnets=()
+    while IFS= read -r subnet; do
+        subnets+=("$subnet")
+    done < <(aws ec2 describe-subnets --filters "Name=vpc-id,Values=$vpc_id" \
         --query 'Subnets[*].[SubnetId,AvailabilityZone]' --output text)
 
     if [ "${#subnets[@]}" -eq 0 ]; then

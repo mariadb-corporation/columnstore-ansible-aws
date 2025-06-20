@@ -667,6 +667,25 @@ check_and_generate_random_passwords() {
 
 # Run
 
+# Check if we're running under Bash
+if [ -z "$BASH_VERSION" ]; then
+  echo "ERROR: This script must be run with Bash, not sh or zsh."
+  echo "Try running:"
+  echo "  bash ./kickstart.sh"
+  exit 1
+fi
+
+# Check Bash version
+BASH_MAJOR_VERSION=${BASH_VERSINFO[0]}
+if (( BASH_MAJOR_VERSION < 4 )); then
+  echo "ERROR: Bash version 4 or higher is required (you are using Bash $BASH_VERSION)."
+  echo "On macOS, install newer Bash with Homebrew:"
+  echo "  brew install bash"
+  echo "Then run this script with:"
+  echo "  /opt/homebrew/bin/bash ./kickstart.sh"
+  exit 1
+fi
+
 # Check if AWS CLI is installed, if not -- install it
 if ! command -v aws &> /dev/null; then
     echo "AWS CLI not found, installing it now..."

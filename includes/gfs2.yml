@@ -14,7 +14,7 @@
       ansible.builtin.blockinfile:
         path: /etc/hosts
         block: |
-          {% for host in groups['all'] | reject('search', '^mx') %}
+          {% for host in groups['all'] | reject('search', '^mx') | reject('equalto', 'devhost') %}
           {{ hostvars[host].private_ip }} {{ host }}
           {% endfor %}
 
@@ -60,10 +60,10 @@
       ignore_errors: true
 
     - name: "Authorizing PCS Nodes"
-      ansible.builtin.command: pcs cluster auth {{ groups['all'] | reject('search', '^mx') | join(' ') }} -u hacluster -p {{ pcs_pass }}
+      ansible.builtin.command: pcs cluster auth {{ groups['all'] | reject('search', '^mx') | reject('equalto', 'devhost') | join(' ') }} -u hacluster -p {{ pcs_pass }}
 
     - name: "Setting Up PCS Cluster"
-      ansible.builtin.command: pcs cluster setup --name hacluster {{ groups['all'] | reject('search', '^mx') | join(' ') }} --force
+      ansible.builtin.command: pcs cluster setup --name hacluster {{ groups['all'] | reject('search', '^mx') | reject('equalto', 'devhost') | join(' ') }} --force
 
     - name: "Starting PCS Cluster"
       ansible.builtin.command: pcs cluster start --all
@@ -74,7 +74,7 @@
     - name: "Setting Up Fencing"
       ansible.builtin.command: >
         pcs stonith create clusterfence fence_aws access_key={{ s3_access_key_id }} secret_key={{ s3_secret_access_key }} region={{ aws_region }}
-        pcmk_host_map="{% for host in groups['all'] | reject('search', '^mx') %}{{ host }}:{{ hostvars[host].instance_id }}{% if not loop.last %};{% endif %}{% endfor %}"
+        pcmk_host_map="{% for host in groups['all'] | reject('search', '^mx') | reject('equalto', 'devhost') %}{{ host }}:{{ hostvars[host].instance_id }}{% if not loop.last %};{% endif %}{% endfor %}"
         power_timeout=240 pcmk_reboot_timeout=480 pcmk_reboot_retries=4
 
     - name: "Setting 'No Quorum' Policy"
@@ -83,7 +83,7 @@
     - name: "Creating 'dlm' Resource"
       ansible.builtin.command: pcs resource create dlm ocf:pacemaker:controld op monitor interval=30s on-fail=fence clone interleave=true ordered=true
 
-- hosts: "{{ groups['all'] | reject('search', '^mx') | list }}"
+- hosts: "{{ groups['all'] | reject('search', '^mx') | reject('equalto', 'devhost') | list }}"
   name: "Starting Locks"
   become: true
   become_user: root

@@ -32,6 +32,9 @@ maxscale_pass: ${maxscale_pass}
 repli_user: ${repli_user}
 repli_pass: ${repli_pass}
 
+# SSH key file
+ssh_key_file: ${ssh_key_file}
+
 # AWS Configuration
 aws_region: ${aws_region}
 aws_zone: ${aws_zone}
@@ -46,3 +49,10 @@ pcs_pass: ${pcs_pass}
 mariadb_rpms_path: ${mariadb_rpms_path}
 cs_package_manager_custom_version: ${cs_package_manager_custom_version}
 reboot: ${reboot}
+
+# EFS Configuration
+create_shared_efs: ${create_shared_efs}
+shared_efs_volume_id: ${shared_efs_volume_id}
+shared_efs_mount_point: "${shared_efs_mount_point}"
+shared_efs_include_dev_host: ${shared_efs_include_dev_host}
+shared_efs_dns_name: "${shared_efs_dns_name}"

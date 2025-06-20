@@ -40,3 +40,4 @@ unzip: unzip
 user: mariadb
 version: 7
 wget: wget
+os_user: centos

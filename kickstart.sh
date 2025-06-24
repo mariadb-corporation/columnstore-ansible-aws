@@ -4,6 +4,22 @@ set -e # Exit on errors
 
 AWS_REGION="us-west-2"
 
+# Colors
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+BLUE='\033[1;34m'
+NC='\033[0m' # No Color (reset)
+
+
+note() {
+    echo -e "${YELLOW}NOTE:${NC} $*"
+}
+
+warn() {
+    echo -e "${RED}WARNING:${NC} $*"
+}
+
+
 get_distro_type() {
     if command -v apt-get &> /dev/null; then
         echo "debian"
@@ -129,7 +145,9 @@ set_var_value() {
 
     # If variable is already set, replace it
     if grep -qE "^$var_name\s*=" terraform.tfvars; then
-        sed -i '' "s|^$var_name[[:space:]]*=.*|$var_name = \"$var_value\"|" terraform.tfvars
+        # Universal approach (for both Linux and MacOS) using a temp file
+        sed "s|^$var_name[[:space:]]*=.*|$var_name = \"$var_value\"|" terraform.tfvars > terraform.tfvars.tmp
+        mv terraform.tfvars.tmp terraform.tfvars
     else
         echo "$var_name = \"$var_value\"" >> terraform.tfvars
     fi
@@ -718,7 +736,8 @@ fi
 echo "Filling terraform.tfvars with values..."
 # If some variable is already set in terraform.tfvars, show it as default value
 
-echo -e "\n\nNOTE: AWS region we use in this script is $AWS_REGION, please use it everywhere\n\n"
+echo -e "\n\n"
+note "AWS region we use in this script is $AWS_REGION, please use it everywhere\n\n"
 
 if aws sts get-caller-identity >/dev/null 2>&1; then
     echo "User is already authenticated with AWS CLI"
@@ -747,7 +766,7 @@ if [ "$create_shared_efs" == "false" ]; then
     set_var_value "shared_efs_include_dev_host" "false"
     echo ""
 elif [ "$(detect_cloud_environment)" != "aws" ]; then
-    echo "WARNING: This host is not running in AWS. You cannot create a shared EFS volume between this host and the cluster nodes."
+    warning "This host is not running in AWS. You cannot create a shared EFS volume between this host and the cluster nodes."
     echo "We can still create shared EFS between the cluster nodes, but it will not be accessible from this host."
 
     echo "Disabling shared EFS for dev host..."
@@ -755,7 +774,7 @@ elif [ "$(detect_cloud_environment)" != "aws" ]; then
 else
     host_region=$(get_this_host_region)
     if [ -n "$host_region" ] && [ "$host_region" != "$AWS_REGION" ]; then
-        echo "WARNING: This host is running in AWS region $host_region. For this script to work correctly, this host must be in $AWS_REGION AWS region"
+        warning "This host is running in AWS region $host_region. For this script to work correctly, this host must be in $AWS_REGION AWS region"
         echo "Disabling shared EFS for dev host..."
         set_var_value "shared_efs_include_dev_host" "false"
     else

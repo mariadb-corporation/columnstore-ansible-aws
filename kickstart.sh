@@ -771,7 +771,10 @@ else
 fi
 
 propose_change_value "mariadb_enterprise_token" true "Get MariaDB Enterprise token from https://mariadb.com/downloads/token"
-propose_change_value "use_s3" false "Use S3 in MCS setup?"
+
+cur_use_s3=$(get_current_var_value "use_s3" "false")
+use_s3=$(ask_boolean "use_s3" "Do you want to use S3 in MCS setup?" "$cur_use_s3")
+set_var_value "use_s3" "$use_s3"
 
 choose_distro
 

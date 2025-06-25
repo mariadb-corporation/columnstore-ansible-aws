@@ -86,11 +86,6 @@ maxscale_node_root_block_size = 100
 # Prefix of the cluster to standup - Any Name You Want
 deployment_prefix = "testing"
 
-# Additional tags to apply to resources
-additional_tags = {
-  description = "testing columnstore"
-}
-
 # S3 Configuration
 s3_domain = "amazonaws.com"
 s3_ssl_disable = false

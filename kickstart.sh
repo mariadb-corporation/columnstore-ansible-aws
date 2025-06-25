@@ -8,6 +8,7 @@ AWS_REGION="us-west-2"
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
 BLUE='\033[1;34m'
+GREEN='\033[0;32m'
 NC='\033[0m' # No Color (reset)
 
 # Here we will store info about changes made during this script run
@@ -19,6 +20,10 @@ note() {
 
 warn() {
     echo -e "${RED}WARNING:${NC} $*"
+}
+
+in_green() {
+    echo -e "${GREEN}$*${NC}"
 }
 
 log_change() {
@@ -717,6 +722,42 @@ check_and_generate_random_passwords() {
     done
 }
 
+handle_additional_tags() {
+    echo ""
+    echo "Checking for required 'additional_tags' in terraform.tfvars..."
+
+    if grep -q '^additional_tags *=' terraform.tfvars; then
+        echo ""
+        echo "'additional_tags' already exists in terraform.tfvars:"
+        awk '/^additional_tags *= *\{/ {flag=1; print; next} /^\}/ {print; flag=0} flag' terraform.tfvars
+        echo ""
+        echo "You can edit these tags manually in terraform.tfvars if needed."
+        return
+    fi
+
+    echo ""
+    warn "'additional_tags' is not set."
+    echo "If these tags are missing, security will automatically shut down your instance after some time."
+    echo "Once the instance is stopped, its IP will change, breaking automatic connections."
+    echo "Eventually, the instance and all associated data may be deleted."
+    echo ""
+
+    read -p "Enter your name for the 'owner' tag: " tag_owner
+    read -p "Enter description for this cluster: " tag_description
+    read -p "Enter expiration date (e.g., 2025-12-31): " tag_expiration
+
+    echo "" >> terraform.tfvars
+    {
+        echo "additional_tags = {"
+        echo "  owner       = \"$tag_owner\""
+        echo "  description = \"$tag_description\""
+        echo "  expiration  = \"$tag_expiration\""
+        echo "}"
+    } >> terraform.tfvars
+
+    CHANGELOG+=("Added 'additional_tags': owner ($tag_owner), description ($tag_description), expiration ($tag_expiration)")
+}
+
 # Run
 
 # Check if we're running under Bash
@@ -838,15 +879,18 @@ check_or_choose_vpc_and_sg
 
 propose_change_value "aws_mariadb_instance_size"
 
+handle_additional_tags
+
 check_and_generate_random_passwords
 
+# Show summary of changes made during this run
 if [ "${#CHANGELOG[@]}" -gt 0 ]; then
     echo ""
-    echo -e "\033[1;32m=== Summary of changes made ===\033[0m"
+    in_green "=== Summary of changes made ==="
     for change in "${CHANGELOG[@]}"; do
         echo "- $change"
     done
     echo ""
 else
-    echo -e "\033[1;34mNo changes were made during this run.\033[0m"
+    in_green "No changes were made during this run."
 fi

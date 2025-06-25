@@ -143,18 +143,18 @@ set_var_value() {
     local var_name="$1"
     local var_value="$2"
 
-    # Screen chars that have special meaning in sed
+    # Escape special characters for safe sed replacement
     local escaped_value
-    escaped_value=$(printf '%s\n' "$var_value" | sed -e 's/[\/&|]/\\&/g')
+    escaped_value=$(printf '%s' "$var_value" | sed -e 's/[\/&|]/\\&/g')
 
     local tmpfile
     tmpfile=$(mktemp)
 
-    if grep -qE "^$var_name\s*=" terraform.tfvars; then
-        # Replace existing value
-        sed "s|^$var_name\s*=.*|$var_name = \"$escaped_value\"|" terraform.tfvars > "$tmpfile"
+    if grep -qE "^$var_name[[:space:]]*=" terraform.tfvars; then
+        # Replace the line with the updated value
+        sed "s|^$var_name[[:space:]]*=.*|$var_name = \"$escaped_value\"|" terraform.tfvars > "$tmpfile"
     else
-        # Copy file and append variable to the end
+        # Append new variable at the end of the file
         cat terraform.tfvars > "$tmpfile"
         echo "$var_name = \"$var_value\"" >> "$tmpfile"
     fi

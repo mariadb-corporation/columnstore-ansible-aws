@@ -143,14 +143,23 @@ set_var_value() {
     local var_name="$1"
     local var_value="$2"
 
-    # If variable is already set, replace it
+    # Screen chars that have special meaning in sed
+    local escaped_value
+    escaped_value=$(printf '%s\n' "$var_value" | sed -e 's/[\/&|]/\\&/g')
+
+    local tmpfile
+    tmpfile=$(mktemp)
+
     if grep -qE "^$var_name\s*=" terraform.tfvars; then
-        # Universal approach (for both Linux and MacOS) using a temp file
-        sed "s|^$var_name[[:space:]]*=.*|$var_name = \"$var_value\"|" terraform.tfvars > terraform.tfvars.tmp
-        mv terraform.tfvars.tmp terraform.tfvars
+        # Replace existing value
+        sed "s|^$var_name\s*=.*|$var_name = \"$escaped_value\"|" terraform.tfvars > "$tmpfile"
     else
-        echo "$var_name = \"$var_value\"" >> terraform.tfvars
+        # Copy file and append variable to the end
+        cat terraform.tfvars > "$tmpfile"
+        echo "$var_name = \"$var_value\"" >> "$tmpfile"
     fi
+
+    mv "$tmpfile" terraform.tfvars
 }
 
 choose_distro() {
@@ -244,11 +253,12 @@ choose_distro() {
 }
 
 get_aws_imds_token() {
-    curl -s --fail -X PUT "http://169.254.169.254/latest/api/token" \
+    curl -s --fail --connect-timeout 3 -X PUT "http://169.254.169.254/latest/api/token" \
          -H "X-aws-ec2-metadata-token-ttl-seconds: 60"
 }
 
 detect_cloud_environment() {
+  echo "Detecting cloud environment..."
   # Try AWS EC2 IMDSv2 first
   local token instance_id
 
@@ -523,7 +533,7 @@ choose_or_create_vpc_and_sg() {
     read -p "Choose VPC number or 'N': " vpc_choice
     local vpc_id
 
-    if [[ "$vpc_choice" =~ ^[0-9]+$ ]] && [ "$vpc_choice" -ge 0 ] && [ "$vpc_choice" -lt "${#vpcs[@]}" ]]; then
+    if [[ "$vpc_choice" =~ ^[0-9]+$ ]] && [ "$vpc_choice" -ge 0 ] && [ "$vpc_choice" -lt "${#vpcs[@]}" ]; then
         vpc_id=$(awk '{print $1}' <<< "${vpcs[$vpc_choice]}")
     else
         echo "Creating new VPC..."
@@ -660,7 +670,7 @@ get_this_host_vpc_info() {
 
 generate_random_password() {
     # Includes upper/lowercase, numbers, and some special chars compatible with MariaDB
-    tr -dc 'A-Za-z0-9!@#%^&*()-_=+' </dev/urandom | head -c 16
+    LANG=C tr -dc 'A-Za-z0-9!@#%^&*()-_=+' </dev/urandom | head -c 16
 }
 
 check_and_generate_random_passwords() {
@@ -766,7 +776,7 @@ if [ "$create_shared_efs" == "false" ]; then
     set_var_value "shared_efs_include_dev_host" "false"
     echo ""
 elif [ "$(detect_cloud_environment)" != "aws" ]; then
-    warning "This host is not running in AWS. You cannot create a shared EFS volume between this host and the cluster nodes."
+    warn "This host is not running in AWS. You cannot create a shared EFS volume between this host and the cluster nodes."
     echo "We can still create shared EFS between the cluster nodes, but it will not be accessible from this host."
 
     echo "Disabling shared EFS for dev host..."
@@ -774,7 +784,7 @@ elif [ "$(detect_cloud_environment)" != "aws" ]; then
 else
     host_region=$(get_this_host_region)
     if [ -n "$host_region" ] && [ "$host_region" != "$AWS_REGION" ]; then
-        warning "This host is running in AWS region $host_region. For this script to work correctly, this host must be in $AWS_REGION AWS region"
+        warn "This host is running in AWS region $host_region. For this script to work correctly, this host must be in $AWS_REGION AWS region"
         echo "Disabling shared EFS for dev host..."
         set_var_value "shared_efs_include_dev_host" "false"
     else
@@ -788,14 +798,18 @@ else
         fi
     fi
 fi
+echo ""
 
 propose_change_value "mariadb_enterprise_token" true "Get MariaDB Enterprise token from https://mariadb.com/downloads/token"
+echo ""
 
 cur_use_s3=$(get_current_var_value "use_s3" "false")
 use_s3=$(ask_boolean "use_s3" "Do you want to use S3 in MCS setup?" "$cur_use_s3")
 set_var_value "use_s3" "$use_s3"
+echo ""
 
 choose_distro
+
 
 check_or_choose_vpc_and_sg
 

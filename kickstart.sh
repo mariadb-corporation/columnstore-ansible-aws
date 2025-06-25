@@ -10,6 +10,8 @@ YELLOW='\033[1;33m'
 BLUE='\033[1;34m'
 NC='\033[0m' # No Color (reset)
 
+# Here we will store info about changes made during this script run
+CHANGELOG=()
 
 note() {
     echo -e "${YELLOW}NOTE:${NC} $*"
@@ -19,6 +21,10 @@ warn() {
     echo -e "${RED}WARNING:${NC} $*"
 }
 
+log_change() {
+    local msg="$1"
+    CHANGELOG+=("$msg")
+}
 
 get_distro_type() {
     if command -v apt-get &> /dev/null; then
@@ -142,6 +148,7 @@ propose_change_value() {
 set_var_value() {
     local var_name="$1"
     local var_value="$2"
+    local must_mask_value="${3:-false}"
 
     # Escape special characters for safe sed replacement
     local escaped_value
@@ -150,13 +157,26 @@ set_var_value() {
     local tmpfile
     tmpfile=$(mktemp)
 
+    masked_value=$var_value
+    if [ "$must_mask_value" = "true" ]; then
+        masked_value="${var_value:0:3}***${var_value: -3}"
+    fi
+
     if grep -qE "^$var_name[[:space:]]*=" terraform.tfvars; then
+        local current_value=$(get_current_var_value "$var_name")
+
         # Replace the line with the updated value
         sed "s|^$var_name[[:space:]]*=.*|$var_name = \"$escaped_value\"|" terraform.tfvars > "$tmpfile"
+
+        # Only log if value changed
+        if [ "$current_value" != "$var_value" ]; then
+            log_change "Updated $var_name in terraform.tfvars to '$masked_value'"
+        fi
     else
         # Append new variable at the end of the file
         cat terraform.tfvars > "$tmpfile"
         echo "$var_name = \"$var_value\"" >> "$tmpfile"
+        log_change "Added $var_name to terraform.tfvars with value '$masked_value'"
     fi
 
     mv "$tmpfile" terraform.tfvars
@@ -323,6 +343,7 @@ select_or_create_aws_profile() {
     else
         read -p "Enter name for new profile: " profile_name
         aws configure --profile "$profile_name"
+        log_change "Created new AWS profile '$profile_name'"
     fi
 
     echo "Using profile: $profile_name"
@@ -480,6 +501,7 @@ choose_aws_key_pair() {
         chmod 400 "$pem_file"
         echo "Created key pair: $selected_key"
         echo "Saved private key to: $pem_file"
+        log_change "Created new AWS key pair '$selected_key' and saved to '$pem_file'"
 
         set_var_value key_pair_name "$selected_key"
         set_var_value ssh_key_file "$pem_file"
@@ -540,6 +562,7 @@ choose_or_create_vpc_and_sg() {
         vpc_id=$(aws ec2 create-vpc --cidr-block 10.0.0.0/16 --query 'Vpc.VpcId' --output text)
         aws ec2 create-tags --resources "$vpc_id" --tags Key=Name,Value="mcs-vpc"
         echo "Created VPC: $vpc_id"
+        log_change "Created new VPC with ID '$vpc_id'"
     fi
 
     set_var_value "aws_vpc" "$vpc_id"
@@ -559,6 +582,7 @@ choose_or_create_vpc_and_sg() {
         az=$(aws ec2 describe-availability-zones --query 'AvailabilityZones[0].ZoneName' --output text)
         subnet_id=$(aws ec2 create-subnet --vpc-id "$vpc_id" --cidr-block 10.0.1.0/24 --availability-zone "$az" --query 'Subnet.SubnetId' --output text)
         echo "Created subnet: $subnet_id in $az"
+        log_change "Created new subnet with ID '$subnet_id' in VPC '$vpc_id'"
     else
         echo "Available subnets:"
         for i in "${!subnets[@]}"; do
@@ -684,7 +708,7 @@ check_and_generate_random_passwords() {
             if [[ "$(ask_boolean "$var_name" "Generate random value for $var_name?" "true")" == "true" ]]; then
                 local generated
                 generated=$(generate_random_password)
-                set_var_value "$var_name" "$generated"
+                set_var_value "$var_name" "$generated" "true"
                 echo "$var_name set to a secure random value"
             else
                 echo "Skipping generation for $var_name"
@@ -810,9 +834,19 @@ echo ""
 
 choose_distro
 
-
 check_or_choose_vpc_and_sg
 
 propose_change_value "aws_mariadb_instance_size"
 
 check_and_generate_random_passwords
+
+if [ "${#CHANGELOG[@]}" -gt 0 ]; then
+    echo ""
+    echo -e "\033[1;32m=== Summary of changes made ===\033[0m"
+    for change in "${CHANGELOG[@]}"; do
+        echo "- $change"
+    done
+    echo ""
+else
+    echo -e "\033[1;34mNo changes were made during this run.\033[0m"
+fi

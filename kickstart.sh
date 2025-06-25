@@ -283,7 +283,6 @@ get_aws_imds_token() {
 }
 
 detect_cloud_environment() {
-  echo "Detecting cloud environment..."
   # Try AWS EC2 IMDSv2 first
   local token instance_id
 
@@ -699,7 +698,7 @@ get_this_host_vpc_info() {
 
 generate_random_password() {
     # Includes upper/lowercase, numbers, and some special chars compatible with MariaDB
-    LANG=C tr -dc 'A-Za-z0-9!@#%^&*()-_=+' </dev/urandom | head -c 16
+    LANG=C tr -dc 'A-Za-z0-9!@#%^*-_=+' </dev/urandom | head -c 16
 }
 
 check_and_generate_random_passwords() {
@@ -840,26 +839,31 @@ if [ "$create_shared_efs" == "false" ]; then
     echo "Shared EFS creation is disabled."
     set_var_value "shared_efs_include_dev_host" "false"
     echo ""
-elif [ "$(detect_cloud_environment)" != "aws" ]; then
-    warn "This host is not running in AWS. You cannot create a shared EFS volume between this host and the cluster nodes."
-    echo "We can still create shared EFS between the cluster nodes, but it will not be accessible from this host."
-
-    echo "Disabling shared EFS for dev host..."
-    set_var_value "shared_efs_include_dev_host" "false"
 else
-    host_region=$(get_this_host_region)
-    if [ -n "$host_region" ] && [ "$host_region" != "$AWS_REGION" ]; then
-        warn "This host is running in AWS region $host_region. For this script to work correctly, this host must be in $AWS_REGION AWS region"
+    cloud_env=$(detect_cloud_environment)
+    echo "Detected cloud environment: $cloud_env"
+    if [ "$cloud_env" != "aws" ]; then
+        warn "This host is not running in AWS. You cannot create a shared EFS volume between this host and the cluster nodes."
+        echo "We can still create shared EFS between the cluster nodes, but it will not be accessible from this host."
+
         echo "Disabling shared EFS for dev host..."
         set_var_value "shared_efs_include_dev_host" "false"
     else
-        cur_val_include_dev_host=$(get_current_var_value "shared_efs_include_dev_host" "true")
-        if [[ "$(ask_boolean shared_efs_include_dev_host 'Do you want to include (this) dev host in the shared EFS volume setup? This allows you to share code with the cluster nodes to build MCS with your changes' "$cur_val_include_dev_host")" == "true" ]]; then
-            set_var_value "shared_efs_include_dev_host" "true"
-            propose_change_value "shared_efs_mount_point" false "Mount point for shared EFS volume"
-        else
+        host_region=$(get_this_host_region)
+        echo "Dev host AWS region: $host_region"
+        if [ -n "$host_region" ] && [ "$host_region" != "$AWS_REGION" ]; then
+            warn "This host is running in AWS region $host_region. For this script to work correctly, this host must be in $AWS_REGION AWS region"
             echo "Disabling shared EFS for dev host..."
             set_var_value "shared_efs_include_dev_host" "false"
+        else
+            cur_val_include_dev_host=$(get_current_var_value "shared_efs_include_dev_host" "true")
+            if [[ "$(ask_boolean shared_efs_include_dev_host 'Do you want to include (this) dev host in the shared EFS volume setup? This allows you to share code with the cluster nodes to build MCS with your changes' "$cur_val_include_dev_host")" == "true" ]]; then
+                set_var_value "shared_efs_include_dev_host" "true"
+                propose_change_value "shared_efs_mount_point" false "Mount point for shared EFS volume"
+            else
+                echo "Disabling shared EFS for dev host..."
+                set_var_value "shared_efs_include_dev_host" "false"
+            fi
         fi
     fi
 fi

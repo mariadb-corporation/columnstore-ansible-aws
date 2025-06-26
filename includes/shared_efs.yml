@@ -21,6 +21,25 @@
         owner: "{{ os_user }}"
         group: "{{ os_user }}"
 
+    - name: Check if EFS mount is currently mounted
+      become: true
+      command: mountpoint -q {{ shared_efs_mount_point }}
+      register: mount_output
+      ignore_errors: true
+
+    - name: Force unmount EFS if already mounted
+      become: true
+      command: umount -fn {{ shared_efs_mount_point }}
+      when: mount_output.rc == 0
+      ignore_errors: true
+
+    - name: Remove EFS entry from /etc/fstab by mount point if present
+      become: true
+      lineinfile:
+        path: /etc/fstab
+        state: absent
+        regexp: '^[^#]*\s+{{ shared_efs_mount_point | regex_escape() }}\s+nfs4'
+
     - name: Mount EFS filesystem
       mount:
         path: "{{ shared_efs_mount_point }}"
@@ -42,6 +61,25 @@
           name: "{{ nfs_utils }}"
           state: present
 
+      - name: Check if EFS mount is currently mounted
+        become: true
+        command: mountpoint -q {{ shared_efs_mount_point }}
+        register: mount_output
+        ignore_errors: true
+
+      - name: Force unmount EFS if already mounted
+        become: true
+        command: umount -fn {{ shared_efs_mount_point }}
+        when: mount_output.rc == 0
+        ignore_errors: true
+
+      - name: Remove EFS entry from /etc/fstab by mount point if present
+        become: true
+        lineinfile:
+          path: /etc/fstab
+          state: absent
+          regexp: '^[^#]*\s+{{ shared_efs_mount_point | regex_escape() }}\s+nfs4'
+
       - name: Create EFS mount directory
         file:
           path: "{{ shared_efs_mount_point }}"
@@ -49,7 +87,7 @@
           mode: '0755'
           owner: "{{ ansible_user_id }}"
           group: "{{ ansible_user_gid }}"
-          
+
       - name: Mount EFS filesystem
         mount:
           path: "{{ shared_efs_mount_point }}"

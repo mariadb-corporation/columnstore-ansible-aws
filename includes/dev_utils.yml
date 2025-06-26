@@ -9,6 +9,7 @@
       copy:
         dest: "{{ playbook_dir }}/../connect.sh"
         mode: '0755'
+        force: yes
         content: |
           #!/bin/bash
           set -e

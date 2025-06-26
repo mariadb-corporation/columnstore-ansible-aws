@@ -697,8 +697,15 @@ get_this_host_vpc_info() {
 }
 
 generate_random_password() {
-    # Includes upper/lowercase, numbers, and some special chars compatible with MariaDB
-    LANG=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 16
+    local upper=$(tr -dc 'A-Z' < /dev/urandom | head -c1)
+    local lower=$(tr -dc 'a-z' < /dev/urandom | head -c1)
+    local digit=$(tr -dc '0-9' < /dev/urandom | head -c1)
+    local rest=$(tr -dc 'A-Za-z0-9!@%^*-_+=' < /dev/urandom | head -c13)
+
+    local password="$upper$lower$digit$rest"
+
+    # Shuffle the result to avoid predictable structure
+    echo "$password" | fold -w1 | shuf | tr -d '\n'
 }
 
 check_and_generate_random_passwords() {

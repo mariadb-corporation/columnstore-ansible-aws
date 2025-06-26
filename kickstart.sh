@@ -697,10 +697,10 @@ get_this_host_vpc_info() {
 }
 
 generate_random_password() {
-    local upper=$(tr -dc 'A-Z' < /dev/urandom | head -c1)
-    local lower=$(tr -dc 'a-z' < /dev/urandom | head -c1)
-    local digit=$(tr -dc '0-9' < /dev/urandom | head -c1)
-    local rest=$(tr -dc 'A-Za-z0-9!@%^*-_+=' < /dev/urandom | head -c13)
+    local upper=$(LC_ALL=C tr -dc 'A-Z' < /dev/urandom | head -c1)
+    local lower=$(LC_ALL=C tr -dc 'a-z' < /dev/urandom | head -c1)
+    local digit=$(LC_ALL=C tr -dc '0-9' < /dev/urandom | head -c1)
+    local rest=$(LC_ALL=C tr -dc 'A-Za-z0-9!@%^*_+=-' < /dev/urandom | head -c13)
 
     local password="$upper$lower$digit$rest"
 

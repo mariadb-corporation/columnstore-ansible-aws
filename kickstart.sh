@@ -698,7 +698,7 @@ get_this_host_vpc_info() {
 
 generate_random_password() {
     # Includes upper/lowercase, numbers, and some special chars compatible with MariaDB
-    LANG=C tr -dc 'A-Za-z0-9!@#%^*-_=+' </dev/urandom | head -c 16
+    LANG=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 16
 }
 
 check_and_generate_random_passwords() {

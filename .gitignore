@@ -10,3 +10,4 @@ hosts
 terraform.tfstate*
 variables.bak
 terraform.tfvars
+connect.sh

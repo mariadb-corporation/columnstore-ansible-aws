@@ -25,7 +25,7 @@
       state: absent
       login_unix_socket: '{{ mariadb_socket }}'
     no_log: true
-  
+
   - name: "Remove admin_user if exists"
     mysql_user:
       name: '{{ admin_user }}'
@@ -182,7 +182,7 @@
   #   shell: mcs cluster node remove --node {{ item.key }}
   #   with_dict: "{{ cluster_info.json }}"
   #   when: cluster_info.json['num_nodes'] | int > 0
-  
+
   - name: "Adding Nodes To ColumnStore Cluster"
     uri:
       url: "https://{{ hostvars['mcs1'].ansible_host }}:8640/cmapi/0.4.0/cluster/node"
@@ -198,5 +198,4 @@
         timeout: 120
         node: "{{ hostvars[item].private_dns }}"
       timeout: 180
-    with_items: "{{ groups['all'] | reject('search', '^mx') | list }}"
- 
+    with_items: "{{ groups['all'] | reject('search', '^mx') | reject('equalto', 'devhost') | list }}"

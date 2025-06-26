@@ -6,6 +6,11 @@ ${node.name} ansible_host=${node.public_dns} private_dns=${node.private_dns} pri
 ${node.name} ansible_host=${node.public_dns} private_dns=${node.private_dns} private_ip=${node.private_ip} instance_id=${node.id}
 %{ endfor ~}
 
+# This host (developer's host), where we run terraform & ansible
+# We need it to be able to mount shared EFS if enabled
+[dev]
+devhost ansible_connection=local
+
 [primary]
 mcs1
 

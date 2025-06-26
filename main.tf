@@ -6,6 +6,11 @@ provider "aws" {
   profile = var.aws_profile != "" ? var.aws_profile : null
 }
 
+# We use external VPC (that we don't create here), but we need to reference it
+data "aws_vpc" "selected" {
+  id = var.aws_vpc
+}
+
 resource "aws_security_group" "mcs_traffic" {
   name   = "${var.deployment_prefix}_${var.security_group_name}"
   vpc_id = var.aws_vpc
@@ -40,6 +45,19 @@ resource "aws_security_group" "mcs_traffic" {
     to_port     = 8989
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Allow access to the shared EFS from the dev host VPC if the flag is set
+  dynamic "ingress" {
+    for_each = var.shared_efs_include_dev_host ? [1] : []
+
+    content {
+      description = "Allow EFS access from dev host VPC"
+      from_port   = 0
+      to_port     = 0
+      protocol    = "-1"
+      cidr_blocks = [data.aws_vpc.selected.cidr_block]
+    }
   }
 
   egress {
@@ -122,4 +140,27 @@ resource "aws_volume_attachment" "ebs_attachment" {
   device_name  = "/dev/sdf"
   volume_id    = aws_ebs_volume.storagemanager[0].id
   instance_id  = aws_instance.columnstore_node[count.index].id
+}
+
+# Creates the EFS file system if the create_shared_efs flag is enabled
+resource "aws_efs_file_system" "shared_efs" {
+  count = var.create_shared_efs ? 1 : 0
+
+  tags = {
+    Name = "${var.deployment_prefix}-shared-efs"
+  }
+}
+
+# Creates a mount target for the EFS in the specified subnet.
+# EC2 instances in the VPC use mount targets to connect to the EFS.
+# There must be at least one mount target in each availability zone where instances need access.
+resource "aws_efs_mount_target" "shared_efs_target" {
+  count          = var.create_shared_efs ? 1 : 0
+  file_system_id = aws_efs_file_system.shared_efs[0].id
+  subnet_id      = var.aws_subnet
+
+  # Allows traffic to the EFS only from instances in the mcs_traffic security group
+  security_groups = [
+    aws_security_group.mcs_traffic.id
+  ]
 }

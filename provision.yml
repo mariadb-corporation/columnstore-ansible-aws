@@ -10,7 +10,7 @@
   tasks:
     - name: "Waiting For Servers To Initialize"
       wait_for_connection:
-    
+
 ## Bootstrap For Ansible
 
 - hosts: "primary,replicas,maxscale"
@@ -54,3 +54,10 @@
 
 - name: "Configuring MaxScale"
   import_playbook: includes/maxscale.yml
+
+- name: "Configuring shared EFS"
+  import_playbook: includes/shared_efs.yml
+  when: create_shared_efs | bool
+
+- name: "Dev support utils"
+  import_playbook: includes/dev_utils.yml

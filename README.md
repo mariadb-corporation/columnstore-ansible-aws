@@ -30,12 +30,14 @@ Open a terminal window and clone the repository:
 
 1.  `git clone https://github.com/mariadb-corporation/columnstore-ansible.git`
 2.  `cd` into the newly cloned folder
-3.  `cp .tfvars.sample terraform.tfvars` This file contains the values for the variables used in the Terraform configuration.
-4.  Edit `terraform.tfvars` and supply your own variable values. See `variables.tf` for variable descriptions.
+3.  `./kickstart.sh` This script will help you fill in the required Terraform variables (AWS credentials, distro, etc). It will create a `terraform.tfvars` file with the variables you provided.
+4.  You can manually edit the `terraform.tfvars` file to change any of the variables that were not set by `kickstart.sh`. See `variables.tf` for variable descriptions.
 5.  `terraform init`
 6.  `terraform plan` (Optional)
 7.  `terraform apply --auto-approve`
 8.  `ansible-playbook provision.yml`
+
+When the playbook completes, it will also create `connect.sh` in the current directory. This script will allow you to connect to the created nodes by name (e.g. `./connect.sh mcs1`).
 
 Further information can be found on our [official deployment guide](https://mariadb.com/docs/deploy/enterprise-multi-columnstore/).
 

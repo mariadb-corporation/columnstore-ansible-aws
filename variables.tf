@@ -260,3 +260,21 @@ variable "mariadb_rpms_path" {
   type    = string
   default = ""
 }
+
+variable "create_shared_efs" {
+  description = "Create a shared EFS volume for Columnstore nodes (optional)"
+  type        = bool
+  default     = false
+}
+
+variable "shared_efs_include_dev_host" {
+  type        = bool
+  default     = false
+  description = "Whether to mount EFS also on the dev host if possible"
+}
+
+variable "shared_efs_mount_point" {
+  description = "Directory where EFS volume should be mounted (optional)"
+  type        = string
+  default     = "/shared"
+}

@@ -68,6 +68,7 @@ resource "local_file" "AnsibleVariables" {
       aws_region               = var.aws_region,
       aws_secret_key           = var.aws_secret_key,
       aws_zone                 = var.aws_zone,
+      ssh_key_file             = var.ssh_key_file,
       cej_pass                 = var.cej_pass,
       cej_user                 = var.cej_user,
       cmapi_key                = var.cmapi_key,
@@ -86,10 +87,15 @@ resource "local_file" "AnsibleVariables" {
       use_s3                   = var.use_s3,
       aws_mariadb_instance_size= var.aws_mariadb_instance_size,
       aws_maxscale_instance_size= var.aws_maxscale_instance_size,
-      mariadb_has_nvme = can(regex("d\\.metal", var.aws_mariadb_instance_size)) ? true : false,
+      mariadb_has_nvme         = can(regex("d\\.metal", var.aws_mariadb_instance_size)) ? true : false,
       mariadb_rpms_path        = var.mariadb_rpms_path,
       cs_package_manager_custom_version = var.cs_package_manager_custom_version,
       reboot                   = var.reboot,
+      create_shared_efs        = var.create_shared_efs,
+      shared_efs_volume_id     = var.create_shared_efs ? aws_efs_file_system.shared_efs[0].id : "",
+      shared_efs_mount_point   = var.shared_efs_mount_point,
+      shared_efs_include_dev_host = var.shared_efs_include_dev_host,
+      shared_efs_dns_name      = var.create_shared_efs ? aws_efs_file_system.shared_efs[0].dns_name : "",
     }
   )
   filename = "inventory/group_vars/all.yml"

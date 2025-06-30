@@ -1,0 +1,48 @@
+- hosts: devhost
+  become: yes
+  vars_files:
+    - '../inventory/group_vars/distro/{{ ansible_distribution | lower }}{{ ansible_distribution_major_version }}.yml'
+    - '../inventory/group_vars/all.yml'
+
+  tasks:
+    - name: Generate connect.sh script on devhost
+      copy:
+        dest: "{{ playbook_dir }}/../connect.sh"
+        mode: '0755'
+        force: yes
+        content: |
+          #!/bin/bash
+          set -e
+
+          host_alias="$1"
+          shift || true
+
+          declare -A HOSTS
+          {% for host in groups['primary'] + groups['replicas'] + groups['maxscale'] %}
+          HOSTS["{{ host }}"]="{{ hostvars[host]['ansible_host'] }}"
+          {% endfor %}
+
+          if [ -z "$host_alias" ]; then
+              echo "Usage: $0 <host> [command]"
+              echo "Available hosts:"
+              for h in "${!HOSTS[@]}"; do
+                  echo "  $h"
+              done
+              exit 1
+          fi
+
+          ip="${HOSTS[$host_alias]}"
+          if [ -z "$ip" ]; then
+              echo "Unknown host alias: $host_alias"
+              exit 2
+          fi
+
+          key_file="{{ ssh_key_file }}"
+          user="{{ os_user }}"
+
+          if [ -z "$1" ]; then
+              ssh -i "$key_file" "$user@$ip"
+          else
+              ssh -i "$key_file" "$user@$ip" "$@"
+          fi
+      become: false

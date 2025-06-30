@@ -1,0 +1,98 @@
+---
+
+- hosts: "primary,replicas"
+  become: yes
+  become_user: root
+  vars_files:
+    - '../inventory/group_vars/distro/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}.yml'
+    - '../inventory/group_vars/all.yml'
+
+  tasks:
+    - name: Install nfs-utils package
+      package:
+        name: "{{ nfs_utils }}"
+        state: present
+
+    - name: Create EFS mount directory
+      file:
+        path: "{{ shared_efs_mount_point }}"
+        state: directory
+        mode: '0755'
+        owner: "{{ os_user }}"
+        group: "{{ os_user }}"
+
+    - name: Check if EFS mount is currently mounted
+      become: true
+      command: mountpoint -q {{ shared_efs_mount_point }}
+      register: mount_output
+      ignore_errors: true
+
+    - name: Force unmount EFS if already mounted
+      become: true
+      command: umount -fn {{ shared_efs_mount_point }}
+      when: mount_output.rc == 0
+      ignore_errors: true
+
+    - name: Remove EFS entry from /etc/fstab by mount point if present
+      become: true
+      lineinfile:
+        path: /etc/fstab
+        state: absent
+        regexp: '^[^#]*\s+{{ shared_efs_mount_point | regex_escape() }}\s+nfs4'
+
+    - name: Mount EFS filesystem
+      mount:
+        path: "{{ shared_efs_mount_point }}"
+        src: "{{ shared_efs_dns_name }}:/"
+        fstype: nfs4
+        opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2
+        state: mounted
+
+- hosts: devhost
+  become: yes
+  become_user: root
+  vars_files:
+    - '../inventory/group_vars/distro/{{ ansible_distribution | lower }}{{ ansible_distribution_major_version }}.yml'
+    - '../inventory/group_vars/all.yml'
+  tasks:
+    - block:
+      - name: Install nfs-utils package
+        package:
+          name: "{{ nfs_utils }}"
+          state: present
+
+      - name: Check if EFS mount is currently mounted
+        become: true
+        command: mountpoint -q {{ shared_efs_mount_point }}
+        register: mount_output
+        ignore_errors: true
+
+      - name: Force unmount EFS if already mounted
+        become: true
+        command: umount -fn {{ shared_efs_mount_point }}
+        when: mount_output.rc == 0
+        ignore_errors: true
+
+      - name: Remove EFS entry from /etc/fstab by mount point if present
+        become: true
+        lineinfile:
+          path: /etc/fstab
+          state: absent
+          regexp: '^[^#]*\s+{{ shared_efs_mount_point | regex_escape() }}\s+nfs4'
+
+      - name: Create EFS mount directory
+        file:
+          path: "{{ shared_efs_mount_point }}"
+          state: directory
+          mode: '0755'
+          owner: "{{ ansible_user_id }}"
+          group: "{{ ansible_user_gid }}"
+
+      - name: Mount EFS filesystem
+        mount:
+          path: "{{ shared_efs_mount_point }}"
+          src: "{{ shared_efs_dns_name }}:/"
+          fstype: nfs4
+          opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2
+          state: mounted
+      when: shared_efs_include_dev_host | bool

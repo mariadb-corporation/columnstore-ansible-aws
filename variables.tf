@@ -203,7 +203,7 @@ variable "aws_maxscale_instance_size" {
 variable "columnstore_node_root_block_size" {
   description = "Number of GB for EBS root storage on columnstore nodes"
   type        = number
-  default     = 1000
+  default     = 200
 }
 
 variable "maxscale_node_root_block_size" {

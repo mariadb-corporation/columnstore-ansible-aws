@@ -888,7 +888,12 @@ choose_distro
 
 check_or_choose_vpc_and_sg
 
+propose_change_value "num_columnstore_nodes" false "Number of ColumnStore nodes in the cluster"
+propose_change_value "num_maxscale_instances" false "Number of MaxScale nodes in the cluster"
+
 propose_change_value "aws_mariadb_instance_size"
+
+propose_change_value "columnstore_node_root_block_size" false "Number of GB for EBS root storage on columnstore nodes"
 
 handle_additional_tags
 

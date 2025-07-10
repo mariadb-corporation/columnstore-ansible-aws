@@ -196,6 +196,7 @@ choose_distro() {
         ["Ubuntu 20.04"]="ami-01f99b4d609a9f41e"
         ["Rocky 9"]="ami-0564a7e650e9e8d5a"
         ["Rocky 8"]="ami-0f74cc83310468775"
+        ["Debian 12"]="ami-03420506796dd6873"
     )
 
     # Create reverse mapping (AMI to distro)
@@ -894,6 +895,11 @@ propose_change_value "num_maxscale_instances" false "Number of MaxScale nodes in
 propose_change_value "aws_mariadb_instance_size"
 
 propose_change_value "columnstore_node_root_block_size" false "Number of GB for EBS root storage on columnstore nodes"
+
+echo ""
+note "The 'deployment_prefix' variable is used to uniquely identify your cluster resources."
+note "The default prefix 'testing' can cause conflicts with other clusters if not changed."
+propose_change_value "deployment_prefix" false "Enter a unique prefix for this deployment"
 
 handle_additional_tags
 

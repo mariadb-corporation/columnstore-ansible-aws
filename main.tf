@@ -79,6 +79,7 @@ resource "aws_instance" "columnstore_node" {
   availability_zone = var.aws_zone
   instance_type     = var.aws_mariadb_instance_size
   key_name          = var.key_pair_name
+  associate_public_ip_address = true
   root_block_device {
     volume_size = var.columnstore_node_root_block_size
     volume_type = "gp3"
@@ -101,6 +102,7 @@ resource "aws_instance" "maxscale_instance" {
   availability_zone = var.aws_zone
   instance_type     = var.aws_maxscale_instance_size
   key_name          = var.key_pair_name
+  associate_public_ip_address = true
   root_block_device {
     volume_size = var.maxscale_node_root_block_size
   }

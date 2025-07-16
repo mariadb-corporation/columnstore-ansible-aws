@@ -20,7 +20,8 @@ maxscale: maxscale-enterprise
 mlocate: plocate
 nano: nano
 nfs_utils: nfs-client
-python_dev: python3-devмpre_task: apt autoremove --purge && apt clean && apt -y install python3
+python_dev: python3-dev
+pre_task: apt autoremove --purge && apt clean && apt -y install python3
 python_mysql: python3-mysqldb
 python_requests: python3-requests
 server_cnf: /etc/mysql/mariadb.conf.d/50-server.cnf

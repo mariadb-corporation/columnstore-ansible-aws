@@ -599,15 +599,6 @@ choose_or_create_vpc_and_sg() {
 
     set_var_value "aws_subnet" "$subnet_id"
 
-    # Ensure the chosen/created subnet is public
-    if [ "$(is_subnet_public "$subnet_id")" != "public" ]; then
-        echo "Subnet $subnet_id is not public. Making it public..."
-        make_subnet_public "$subnet_id"
-        echo "Subnet $subnet_id is now public."
-    else
-        echo "Subnet $subnet_id is already public."
-    fi
-
     echo ""
 }
 
@@ -986,6 +977,17 @@ echo ""
 choose_distro
 
 check_or_choose_vpc_and_sg
+# Ensure the subnet is public
+final_subnet_id=$(get_current_var_value "aws_subnet")
+if [ -n "$final_subnet_id" ]; then
+    if [ "$(is_subnet_public "$final_subnet_id")" != "public" ]; then
+        echo "Subnet $final_subnet_id is not public. Making it public..."
+        make_subnet_public "$final_subnet_id"
+        echo "Subnet $final_subnet_id is now public."
+    else
+        echo "Subnet $final_subnet_id is already public."
+    fi
+fi
 
 propose_change_value "num_columnstore_nodes" false "Number of ColumnStore nodes in the cluster"
 propose_change_value "num_maxscale_instances" false "Number of MaxScale nodes in the cluster"

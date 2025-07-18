@@ -47,7 +47,7 @@
   tasks:
 
   - name: "Download MariaDB RPMs using cs_package_manager script"
-    command: bash {{ mariadb_rpms_path }}/cs_package_manager.sh {{ cs_package_manager_custom_version }} --directory {{ mariadb_rpms_path }} 
+    command: bash {{ mariadb_rpms_path }}/cs_package_manager.sh download {{ cs_package_manager_custom_version }} -d {{ mariadb_rpms_path }}
     register: cs_package_manager_output
     when: cs_package_manager_custom_version is defined and cs_package_manager_custom_version != "" and cs_package_manager_custom_version is not none
 

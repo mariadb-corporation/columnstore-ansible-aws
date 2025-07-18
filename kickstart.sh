@@ -368,6 +368,30 @@ select_or_create_aws_profile() {
     set_var_value aws_access_key "$key"
     set_var_value aws_secret_key "$secret"
 
+    # Prompt for AWS session token (for MFA/temporary credentials)
+    local current_session_token
+    current_session_token=$(get_current_var_value "aws_session_token")
+    echo ""
+    if [ -n "$current_session_token" ]; then
+        local masked_token="${current_session_token:0:3}***${current_session_token: -3}"
+        echo "An AWS session token is currently set: $masked_token"
+        read -p "Do you want to change or remove the AWS session token? [y/N]: " set_token
+    else
+        echo "Some AWS authentication methods (like MFA or SSO) require a session token."
+        echo "If you are using temporary credentials, you may need to set this."
+        read -p "Do you want to set an AWS session token? [y/N]: " set_token
+    fi
+    if [[ "$set_token" =~ ^[Yy]$ ]]; then
+        read -p "Enter AWS session token (leave blank to unset): " session_token
+        if [ -n "$session_token" ]; then
+            set_var_value aws_session_token "$session_token"
+            log_change "Set aws_session_token in terraform.tfvars."
+        else
+            set_var_value aws_session_token ""
+            log_change "Removed aws_session_token from terraform.tfvars."
+        fi
+    fi
+
     AWS_PROFILE="$profile_name" show_aws_identity
 }
 

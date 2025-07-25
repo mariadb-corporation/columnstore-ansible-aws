@@ -14,7 +14,7 @@
       path: "{{ mariadb_rpms_path }}"
       state: directory
       mode: '0755'
-      
+
   - name: "Check if MariaDB RPMs directory exists"
     stat:
       path: "{{ mariadb_rpms_path }}"
@@ -43,11 +43,14 @@
   vars_files:
     - '../inventory/group_vars/distro/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}.yml'
     - '../inventory/group_vars/all.yml'
-    
+
   tasks:
 
   - name: "Download MariaDB RPMs using cs_package_manager script"
-    command: bash {{ mariadb_rpms_path }}/cs_package_manager.sh download {{ cs_package_manager_custom_version }} -d {{ mariadb_rpms_path }}
+    command: >-
+      bash {{ mariadb_rpms_path }}/cs_package_manager.sh download {{ cs_package_manager_custom_version }}
+      -d {{ mariadb_rpms_path }}
+      {% if dev_drone_key is defined and dev_drone_key != "" %}-dev {{ dev_drone_key }}{% endif %}
     register: cs_package_manager_output
     when: cs_package_manager_custom_version is defined and cs_package_manager_custom_version != "" and cs_package_manager_custom_version is not none
 
@@ -261,7 +264,7 @@
   - name: "Debug list of RPM or DEB file paths found"
     debug:
       msg: "{{ rpm_files.files | map(attribute='path') | list }}"
- 
+
   - name: "Installing MariaDB RPMs from directory for maxscale"
     yum:
       name: "{{ rpm_files.files | map(attribute='path') | join(',') }}"

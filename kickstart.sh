@@ -375,11 +375,11 @@ select_or_create_aws_profile() {
     if [ -n "$current_session_token" ]; then
         local masked_token="${current_session_token:0:3}***${current_session_token: -3}"
         echo "An AWS session token is currently set: $masked_token"
-        read -p "Do you want to change or remove the AWS session token? [y/N]: " set_token
+        set_token=$(ask_boolean "change_aws_session_token" "Do you want to change or remove the AWS session token?" "false")
     else
         echo "Some AWS authentication methods (like MFA or SSO) require a session token."
         echo "If you are using temporary credentials, you may need to set this."
-        read -p "Do you want to set an AWS session token? [y/N]: " set_token
+        set_token=$(ask_boolean "set_aws_session_token" "Do you want to set an AWS session token?" "false")
     fi
     if [[ "$set_token" =~ ^[Yy]$ ]]; then
         read -p "Enter AWS session token (leave blank to unset): " session_token
@@ -549,7 +549,7 @@ check_or_choose_aws_key_pair() {
         echo "  key_pair_name = $current_key_pair"
         echo "  ssh_key_file  = $current_key_file"
 
-        read -p "Do you want to change it? [y/N]: " change_keys
+        change_keys=$(ask_boolean "change_aws_key_pair" "Do you want to change it?" "false")
         if [[ ! "$change_keys" =~ ^[Yy]$ ]]; then
             echo "Keeping current key pair."
             echo ""
@@ -1024,6 +1024,9 @@ echo ""
 note "The 'deployment_prefix' variable is used to uniquely identify your cluster resources."
 note "The default prefix 'testing' can cause conflicts with other clusters if not changed."
 propose_change_value "deployment_prefix" false "Enter a unique prefix for this deployment"
+
+propose_change_value "dev_drone_key" false "Enter CI bucket name if you want to be able to install dev builds"
+echo ""
 
 handle_additional_tags
 

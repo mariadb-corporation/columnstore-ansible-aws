@@ -261,6 +261,12 @@ variable "mariadb_rpms_path" {
   default = ""
 }
 
+variable "dev_drone_key" {
+  type    = string
+  description = "Path prefix for dev builds"
+  default = ""
+}
+
 variable "create_shared_efs" {
   description = "Create a shared EFS volume for Columnstore nodes (optional)"
   type        = bool

@@ -4,6 +4,7 @@ USERNAME=mariadb
 GROUPNAME=mariadb
 ROCKY=/home/rocky
 CENTOS=/home/centos
+DEBIAN=/home/admin
 UBUNTU=/home/ubuntu
 ORACLE=/home/ec2-user
 NEW=/home/$USERNAME
@@ -24,6 +25,10 @@ fi
 
 if [ -d "$CENTOS" ]; then
     sudo cp $CENTOS/$KEYS $NEW/$KEYS
+fi
+
+if [ -d "$DEBIAN" ]; then
+    sudo cp $DEBIAN/$KEYS $NEW/$KEYS
 fi
 
 if [ -d "$UBUNTU" ]; then

@@ -38,7 +38,7 @@
           fi
 
           key_file="{{ ssh_key_file }}"
-          user="{{ os_user }}"
+          user="{{ hostvars[groups['primary'][0]].primary_os_user }}"
 
           if [ -z "$1" ]; then
               ssh -i "$key_file" "$user@$ip"

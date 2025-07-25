@@ -90,6 +90,7 @@ resource "local_file" "AnsibleVariables" {
       mariadb_has_nvme         = can(regex("d\\.metal", var.aws_mariadb_instance_size)) ? true : false,
       mariadb_rpms_path        = var.mariadb_rpms_path,
       cs_package_manager_custom_version = var.cs_package_manager_custom_version,
+      dev_drone_key            = var.dev_drone_key,
       reboot                   = var.reboot,
       create_shared_efs        = var.create_shared_efs,
       shared_efs_volume_id     = var.create_shared_efs ? aws_efs_file_system.shared_efs[0].id : "",

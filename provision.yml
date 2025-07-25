@@ -30,6 +30,9 @@
 - name: "Preparing The Servers"
   import_playbook: includes/prepare.yml
 
+- name: "Dev support utils"
+  import_playbook: includes/dev_utils.yml
+
 # - name: "Setting Up GFS2"
 #   import_playbook: includes/gfs2.yml
 #   when: use_s3
@@ -58,6 +61,3 @@
 - name: "Configuring shared EFS"
   import_playbook: includes/shared_efs.yml
   when: create_shared_efs | bool
-
-- name: "Dev support utils"
-  import_playbook: includes/dev_utils.yml

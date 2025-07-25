@@ -102,6 +102,8 @@ cs_package_manager_custom_version = ""
 # The path mariadb and columnstore rpms are preloaded to after terraform apply --auto-approve, but before running ansible
 mariadb_rpms_path = ""
 
+dev_drone_key = ""
+
 create_shared_efs = false
 shared_efs_include_dev_host = false
 shared_efs_mount_point = "/shared"

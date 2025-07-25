@@ -368,6 +368,30 @@ select_or_create_aws_profile() {
     set_var_value aws_access_key "$key"
     set_var_value aws_secret_key "$secret"
 
+    # Prompt for AWS session token (for MFA/temporary credentials)
+    local current_session_token
+    current_session_token=$(get_current_var_value "aws_session_token")
+    echo ""
+    if [ -n "$current_session_token" ]; then
+        local masked_token="${current_session_token:0:3}***${current_session_token: -3}"
+        echo "An AWS session token is currently set: $masked_token"
+        set_token=$(ask_boolean "change_aws_session_token" "Do you want to change or remove the AWS session token?" "false")
+    else
+        echo "Some AWS authentication methods (like MFA or SSO) require a session token."
+        echo "If you are using temporary credentials, you may need to set this."
+        set_token=$(ask_boolean "set_aws_session_token" "Do you want to set an AWS session token?" "false")
+    fi
+    if [[ "$set_token" =~ ^[Yy]$ ]]; then
+        read -p "Enter AWS session token (leave blank to unset): " session_token
+        if [ -n "$session_token" ]; then
+            set_var_value aws_session_token "$session_token"
+            log_change "Set aws_session_token in terraform.tfvars."
+        else
+            set_var_value aws_session_token ""
+            log_change "Removed aws_session_token from terraform.tfvars."
+        fi
+    fi
+
     AWS_PROFILE="$profile_name" show_aws_identity
 }
 
@@ -525,7 +549,7 @@ check_or_choose_aws_key_pair() {
         echo "  key_pair_name = $current_key_pair"
         echo "  ssh_key_file  = $current_key_file"
 
-        read -p "Do you want to change it? [y/N]: " change_keys
+        change_keys=$(ask_boolean "change_aws_key_pair" "Do you want to change it?" "false")
         if [[ ! "$change_keys" =~ ^[Yy]$ ]]; then
             echo "Keeping current key pair."
             echo ""
@@ -598,6 +622,7 @@ choose_or_create_vpc_and_sg() {
     fi
 
     set_var_value "aws_subnet" "$subnet_id"
+
     echo ""
 }
 
@@ -695,6 +720,94 @@ get_this_host_vpc_info() {
     subnet_id=$(echo "$instance_info" | jq -r '.SubnetId')
 
     echo "$vpc_id $subnet_id"
+}
+
+is_subnet_public() {
+    local subnet_id="$1"
+
+    # Get the route table(s) associated with the subnet
+    local rtb_ids
+    rtb_ids=$(aws ec2 describe-route-tables \
+        --filters "Name=association.subnet-id,Values=$subnet_id" \
+        --query "RouteTables[*].RouteTableId" --output text)
+
+    # If no explicit association, use the main route table for the VPC
+    if [ -z "$rtb_ids" ]; then
+        local vpc_id
+        vpc_id=$(aws ec2 describe-subnets --subnet-ids "$subnet_id" --query 'Subnets[0].VpcId' --output text)
+        rtb_ids=$(aws ec2 describe-route-tables \
+            --filters "Name=vpc-id,Values=$vpc_id" "Name=association.main,Values=true" \
+            --query "RouteTables[*].RouteTableId" --output text)
+    fi
+
+    # Check each route table for a 0.0.0.0/0 route to an IGW
+    for rtb_id in $rtb_ids; do
+        local igw_route
+        igw_route=$(aws ec2 describe-route-tables --route-table-ids "$rtb_id" \
+            --query "RouteTables[0].Routes[?DestinationCidrBlock=='0.0.0.0/0' && contains(GatewayId, 'igw-')]" \
+            --output text)
+        if [ -n "$igw_route" ]; then
+            # Optionally, check auto-assign public IP
+            local public_ip
+            public_ip=$(aws ec2 describe-subnets --subnet-ids "$subnet_id" --query 'Subnets[0].MapPublicIpOnLaunch' --output text)
+            if [ "$public_ip" == "True" ]; then
+                echo "public"
+            else
+                echo "public (but auto-assign public IP is disabled)"
+            fi
+            return 0
+        fi
+    done
+
+    echo "private"
+    return 1
+}
+
+make_subnet_public() {
+    local subnet_id="$1"
+
+    # Get VPC ID for the subnet
+    local vpc_id
+    vpc_id=$(aws ec2 describe-subnets --subnet-ids "$subnet_id" --query 'Subnets[0].VpcId' --output text)
+    if [ -z "$vpc_id" ] || [ "$vpc_id" == "None" ]; then
+        echo "Could not determine VPC for subnet $subnet_id"
+        return 1
+    fi
+
+    # Ensure VPC has an Internet Gateway
+    local igw_id
+    igw_id=$(aws ec2 describe-internet-gateways --filters "Name=attachment.vpc-id,Values=$vpc_id" --query 'InternetGateways[0].InternetGatewayId' --output text)
+    if [ -z "$igw_id" ] || [ "$igw_id" == "None" ]; then
+        igw_id=$(aws ec2 create-internet-gateway --query 'InternetGateway.InternetGatewayId' --output text)
+        aws ec2 attach-internet-gateway --internet-gateway-id "$igw_id" --vpc-id "$vpc_id"
+        echo "Created and attached Internet Gateway: $igw_id"
+    else
+        echo "VPC $vpc_id already has Internet Gateway: $igw_id"
+    fi
+
+    # Find or create a route table with a default route to the IGW
+    local rtb_id
+    rtb_id=$(aws ec2 describe-route-tables --filters "Name=vpc-id,Values=$vpc_id" \
+        --query "RouteTables[?Routes[?DestinationCidrBlock=='0.0.0.0/0' && GatewayId=='$igw_id']].RouteTableId" --output text)
+    if [ -z "$rtb_id" ]; then
+        rtb_id=$(aws ec2 create-route-table --vpc-id "$vpc_id" --query 'RouteTable.RouteTableId' --output text)
+        aws ec2 create-route --route-table-id "$rtb_id" --destination-cidr-block 0.0.0.0/0 --gateway-id "$igw_id"
+        echo "Created new route table $rtb_id with default route to IGW"
+    else
+        echo "Found existing route table $rtb_id with default route to IGW"
+    fi
+
+    # Associate the route table with the subnet
+    aws ec2 associate-route-table --route-table-id "$rtb_id" --subnet-id "$subnet_id"
+    echo "Associated route table $rtb_id with subnet $subnet_id"
+
+    # Enable auto-assign public IP on the subnet
+    aws ec2 modify-subnet-attribute --subnet-id "$subnet_id" --map-public-ip-on-launch
+    echo "Enabled auto-assign public IP on subnet $subnet_id"
+
+    # Enable DNS hostnames on the VPC
+    aws ec2 modify-vpc-attribute --vpc-id "$vpc_id" --enable-dns-hostnames
+    echo "Enabled DNS hostnames on VPC $vpc_id"
 }
 
 generate_random_password() {
@@ -888,6 +1001,17 @@ echo ""
 choose_distro
 
 check_or_choose_vpc_and_sg
+# Ensure the subnet is public
+final_subnet_id=$(get_current_var_value "aws_subnet")
+if [ -n "$final_subnet_id" ]; then
+    if [ "$(is_subnet_public "$final_subnet_id")" != "public" ]; then
+        echo "Subnet $final_subnet_id is not public. Making it public..."
+        make_subnet_public "$final_subnet_id"
+        echo "Subnet $final_subnet_id is now public."
+    else
+        echo "Subnet $final_subnet_id is already public."
+    fi
+fi
 
 propose_change_value "num_columnstore_nodes" false "Number of ColumnStore nodes in the cluster"
 propose_change_value "num_maxscale_instances" false "Number of MaxScale nodes in the cluster"
@@ -900,6 +1024,9 @@ echo ""
 note "The 'deployment_prefix' variable is used to uniquely identify your cluster resources."
 note "The default prefix 'testing' can cause conflicts with other clusters if not changed."
 propose_change_value "deployment_prefix" false "Enter a unique prefix for this deployment"
+
+propose_change_value "dev_drone_key" false "Enter CI bucket name if you want to be able to install dev builds"
+echo ""
 
 handle_additional_tags
 

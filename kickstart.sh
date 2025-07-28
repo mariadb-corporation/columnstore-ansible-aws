@@ -14,6 +14,9 @@ NC='\033[0m' # No Color (reset)
 # Here we will store info about changes made during this script run
 CHANGELOG=()
 
+# If true, only prompt for values that are not already set in terraform.tfvars
+PROMPT_ONLY_UNSET=false
+
 note() {
     echo -e "${YELLOW}NOTE:${NC} $*"
 }
@@ -30,6 +33,24 @@ log_change() {
     local msg="$1"
     CHANGELOG+=("$msg")
 }
+
+# Parse arguments
+for arg in "$@"; do
+    case $arg in
+        --only-unset|-u)
+            PROMPT_ONLY_UNSET=true
+            note "Will only prompt for values that are not already set in terraform.tfvars."
+            shift
+            ;;
+        --help|-h)
+            echo "Usage: $0 [--only-unset|-u] [--help|-h]"
+            echo "  --only-unset, -u   Only prompt for values that are not already set in terraform.tfvars."
+            echo "  --help, -h         Show this help message."
+            exit 0
+            ;;
+    esac
+done
+
 
 get_distro_type() {
     if command -v apt-get &> /dev/null; then
@@ -78,19 +99,38 @@ install_aws_cli() {
     echo "AWS CLI installed successfully."
 }
 
+is_set_in_config() {
+    local var_name="$1"
+    local value=$(grep -E "^$var_name\s*=" terraform.tfvars | awk -F '=' '{print $2}' | tr -d ' "')
+    if [ -n "$value" ]; then
+        echo "true"
+    else
+        echo "false"
+    fi
+}
+
 get_current_var_value() {
     local var_name="$1"
     local default_value="${2:-}"
 
     if [ -f terraform.tfvars ]; then
-        local value=$(grep -E "^$var_name\s*=" terraform.tfvars | awk -F '=' '{print $2}' | tr -d ' "')
-        if [ -n "$value" ]; then
+        if [[ $(is_set_in_config "$var_name") == "true" ]]; then
+            local value=$(grep -E "^$var_name\s*=" terraform.tfvars | awk -F '=' '{print $2}' | tr -d ' "')
             echo "$value"
         else
             echo "$default_value"
         fi
     else
         echo "$default_value"
+    fi
+}
+
+need_prompt_for_value() {
+    local var_name="$1"
+    if [[ "$PROMPT_ONLY_UNSET" == "true" && $(is_set_in_config "$var_name") == "true" ]]; then
+        echo "false"
+    else
+        echo "true"
     fi
 }
 
@@ -105,7 +145,8 @@ ask_boolean() {
     elif [[ "$current_value" == "false" ]]; then
         yn_prompt="y/N"
     else
-        yn_prompt="y/n"
+        echo "Unknown current value of boolean variable '$var_name': '$current_value'" >&2
+        exit 1
     fi
 
     local answer
@@ -118,7 +159,7 @@ ask_boolean() {
     case "$answer" in
         [Yy]*|true) echo "true";;
         [Nn]*|false) echo "false";;
-        *) echo "Invalid input. Assuming false."; echo "false";;
+        *) echo "Invalid input boolean '$answer'."; exit 1;;
     esac
 }
 
@@ -130,6 +171,11 @@ propose_change_value() {
     local cur_value_to_show="$current_value"
     if [ "$must_mask_value" = "true" ] && [ -n "$current_value" ]; then
         cur_value_to_show="${current_value:0:3}***${current_value: -3}"
+    fi
+
+    if [[ "$PROMPT_ONLY_UNSET" == "true" && -n "$current_value" ]]; then
+        echo "Variable$var_name is already set to '$cur_value_to_show', not updating"
+        return
     fi
 
     local prompt=""
@@ -167,11 +213,18 @@ set_var_value() {
         masked_value="${var_value:0:3}***${var_value: -3}"
     fi
 
+    # Boolean values are not quoted
+    if [ "$var_value" = "true" ] || [ "$var_value" = "false" ]; then
+        value_to_write=$var_value
+    else
+        value_to_write="\"$var_value\""
+    fi
+
     if grep -qE "^$var_name[[:space:]]*=" terraform.tfvars; then
         local current_value=$(get_current_var_value "$var_name")
 
         # Replace the line with the updated value
-        sed "s|^$var_name[[:space:]]*=.*|$var_name = \"$escaped_value\"|" terraform.tfvars > "$tmpfile"
+        sed "s|^$var_name[[:space:]]*=.*|$var_name = $value_to_write|" terraform.tfvars > "$tmpfile"
 
         # Only log if value changed
         if [ "$current_value" != "$var_value" ]; then
@@ -180,7 +233,7 @@ set_var_value() {
     else
         # Append new variable at the end of the file
         cat terraform.tfvars > "$tmpfile"
-        echo "$var_name = \"$var_value\"" >> "$tmpfile"
+        echo "$var_name = $value_to_write" >> "$tmpfile"
         log_change "Added $var_name to terraform.tfvars with value '$masked_value'"
     fi
 
@@ -217,6 +270,12 @@ choose_distro() {
         else
             echo "Current AMI ($current_ami) doesn't match any known distribution"
             matched_distro="Custom AMI"
+        fi
+
+        if [[ "$PROMPT_ONLY_UNSET" == "true" ]]; then
+            echo "AWS AMI is already set to '$current_ami' ($matched_distro), not updating"
+            echo ""
+            return
         fi
 
         local change_ami=$(ask_boolean "change_ami" "AWS AMI is already set to '$current_ami' ($matched_distro). Do you want to change it?" "false")
@@ -426,6 +485,13 @@ sync_terraform_vars_with_aws_credentials() {
     fi
 
     if $need_update; then
+        if [[ "$PROMPT_ONLY_UNSET" == "true" ]]; then
+            if [[ -n "$saved_key" && -n "$saved_secret" ]]; then
+                echo "terraform.tfvars already has AWS credentials set, not updating"
+                return
+            fi
+        fi
+
         local sync=$(ask_boolean "sync_aws_credentials" "Do you want to update terraform.tfvars with the current AWS CLI credentials and profile?" "true")
         if [[ "$sync" == "true" ]]; then
             set_var_value aws_access_key "$actual_key"
@@ -549,6 +615,14 @@ check_or_choose_aws_key_pair() {
         echo "  key_pair_name = $current_key_pair"
         echo "  ssh_key_file  = $current_key_file"
 
+        if [[ "$PROMPT_ONLY_UNSET" == "true" ]]; then
+            return
+        fi
+
+        if [[ "$PROMPT_ONLY_UNSET" == "true" ]]; then
+            return
+        fi
+
         change_keys=$(ask_boolean "change_aws_key_pair" "Do you want to change it?" "false")
         if [[ ! "$change_keys" =~ ^[Yy]$ ]]; then
             echo "Keeping current key pair."
@@ -631,6 +705,14 @@ check_or_choose_vpc_and_sg() {
     local current_subnet=$(get_current_var_value "aws_subnet")
     local current_sg=$(get_current_var_value "security_group_name")
     local use_shared_efs=$(get_current_var_value "create_shared_efs")
+
+    if [[ "$PROMPT_ONLY_UNSET" == "true" ]]; then
+        if [[ -n "$current_vpc" && -n "$current_subnet" && -n "$current_sg" ]]; then
+            echo "VPC/Subnet/SG values are already set, not updating"
+            echo ""
+            return
+        fi
+    fi
 
     # If creating shared EFS, use this host's VPC and subnet
     if [[ "$use_shared_efs" == "true" && "$shared_efs_include_dev_host" == "true" ]]; then
@@ -939,9 +1021,11 @@ if aws sts get-caller-identity >/dev/null 2>&1; then
     aws configure list
     show_aws_identity
 
-    reauth=$(ask_boolean "reauthenticate" "Do you want to re-authenticate or switch AWS profile?" "false")
-    if [[ "$reauth" == "true" ]]; then
-        select_or_create_aws_profile
+    if [[ "$PROMPT_ONLY_UNSET" == "false" ]]; then
+        reauth=$(ask_boolean "reauthenticate" "Do you want to re-authenticate or switch AWS profile?" "false")
+        if [[ "$reauth" == "true" ]]; then
+            select_or_create_aws_profile
+        fi
     fi
 else
     echo "User is not authenticated with AWS CLI yet"
@@ -953,9 +1037,12 @@ sync_terraform_vars_with_aws_credentials
 
 check_or_choose_aws_key_pair
 
-create_shared_efs=$(ask_boolean "create_shared_efs" "Do you want to create a EFS volume that is shared between hosts?" "$(get_current_var_value "create_shared_efs" "false")")
-set_var_value "create_shared_efs" "$create_shared_efs"
+if [[ $(need_prompt_for_value "create_shared_efs") == "true" ]]; then
+    create_shared_efs=$(ask_boolean "create_shared_efs" "Do you want to create a EFS volume that is shared between hosts?" $(get_current_var_value "create_shared_efs" "false"))
+    set_var_value "create_shared_efs" "$create_shared_efs"
+fi
 
+create_shared_efs=$(get_current_var_value "create_shared_efs" "false")
 if [ "$create_shared_efs" == "false" ]; then
     echo "Shared EFS creation is disabled."
     set_var_value "shared_efs_include_dev_host" "false"
@@ -976,14 +1063,16 @@ else
             warn "This host is running in AWS region $host_region. For this script to work correctly, this host must be in $AWS_REGION AWS region"
             echo "Disabling shared EFS for dev host..."
             set_var_value "shared_efs_include_dev_host" "false"
-        else
-            cur_val_include_dev_host=$(get_current_var_value "shared_efs_include_dev_host" "true")
-            if [[ "$(ask_boolean shared_efs_include_dev_host 'Do you want to include (this) dev host in the shared EFS volume setup? This allows you to share code with the cluster nodes to build MCS with your changes' "$cur_val_include_dev_host")" == "true" ]]; then
-                set_var_value "shared_efs_include_dev_host" "true"
-                propose_change_value "shared_efs_mount_point" false "Mount point for shared EFS volume"
-            else
-                echo "Disabling shared EFS for dev host..."
-                set_var_value "shared_efs_include_dev_host" "false"
+        else  # We can use shared EFS
+            if ! [[ "$PROMPT_ONLY_UNSET" == "true" && $(is_set_in_config "shared_efs_include_dev_host") == "true" && $(is_set_in_config "shared_efs_mount_point") == "true" ]]; then
+                cur_val_include_dev_host=$(get_current_var_value "shared_efs_include_dev_host" "true")
+                if [[ $(ask_boolean shared_efs_include_dev_host 'Do you want to include (this) dev host in the shared EFS volume setup? This allows you to share code with the cluster nodes to build MCS with your changes' "$cur_val_include_dev_host") == "true" ]]; then
+                    set_var_value "shared_efs_include_dev_host" "true"
+                    propose_change_value "shared_efs_mount_point" false "Mount point for shared EFS volume"
+                else
+                    echo "Disabling shared EFS for dev host..."
+                    set_var_value "shared_efs_include_dev_host" "false"
+                fi
             fi
         fi
     fi
@@ -993,9 +1082,12 @@ echo ""
 propose_change_value "mariadb_enterprise_token" true "Get MariaDB Enterprise token from https://mariadb.com/downloads/token"
 echo ""
 
-cur_use_s3=$(get_current_var_value "use_s3" "false")
-use_s3=$(ask_boolean "use_s3" "Do you want to use S3 in MCS setup?" "$cur_use_s3")
-set_var_value "use_s3" "$use_s3"
+if [[ $(need_prompt_for_value "use_s3") == "true" ]]; then
+    use_s3=$(ask_boolean "use_s3" "Do you want to use S3 in MCS setup?" $(get_current_var_value "use_s3" "false"))
+    set_var_value "use_s3" "$use_s3"
+else
+    echo "use_s3 is already set to $(get_current_var_value "use_s3"), not updating"
+fi
 echo ""
 
 choose_distro

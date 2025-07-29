@@ -137,9 +137,16 @@ variable "aws_profile" {
   default = ""
 }
 
+variable "create_key_pair" {
+  description = "Whether to create a new AWS key pair"
+  type        = bool
+  nullable    = true
+  default     = null
+}
+
 variable "key_pair_name" {
   type    = string
-  description = "AWS Key Pair Name"
+  description = "AWS Key Pair Name. If create_key_pair is true, it will be prepended with deployment_prefix to avoid conflicts with existing key pairs"
   nullable = false
 }
 

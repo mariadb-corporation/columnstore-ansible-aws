@@ -566,6 +566,7 @@ choose_aws_key_pair() {
             echo "Selected key pair: $selected_key"
             echo "Using private key file: $selected_pem"
 
+            set_var_value create_key_pair "false"
             set_var_value key_pair_name "$selected_key"
             set_var_value ssh_key_file "$selected_pem"
         else
@@ -577,29 +578,11 @@ choose_aws_key_pair() {
         read -p "Enter name for new key pair: " selected_key
         local pem_file="./${selected_key}.pem"
 
-        if [ -f "$pem_file" ]; then
-            echo "File '$pem_file' already exists. Aborting to avoid overwrite."
-            return 1
-        fi
-
-        aws ec2 create-key-pair \
-            --key-name "$selected_key" \
-            --query 'KeyMaterial' \
-            --output text > "$pem_file"
-
-        if [ $? -ne 0 ]; then
-            echo "Failed to create key pair. It may already exist or you lack permissions."
-            rm -f "$pem_file"
-            return 1
-        fi
-
-        chmod 400 "$pem_file"
-        echo "Created key pair: $selected_key"
-        echo "Saved private key to: $pem_file"
-        log_change "Created new AWS key pair '$selected_key' and saved to '$pem_file'"
-
+        set_var_value create_key_pair "true"
         set_var_value key_pair_name "$selected_key"
         set_var_value ssh_key_file "$pem_file"
+        echo "New key pair will be created: $selected_key"
+        echo "Private key will be saved to: $pem_file"
     else
         echo "Invalid option."
         return 1
@@ -609,15 +592,13 @@ choose_aws_key_pair() {
 check_or_choose_aws_key_pair() {
     local current_key_pair=$(get_current_var_value "key_pair_name")
     local current_key_file=$(get_current_var_value "ssh_key_file")
+    local current_create_key_pair=$(get_current_var_value "create_key_pair")
 
-    if [ -n "$current_key_pair" ] && [ -n "$current_key_file" ]; then
+    if [ -n "$current_key_pair" ] && [ -n "$current_key_file" ] && [ "$current_create_key_pair" != "null" ]; then
         echo "Current AWS key pair is set:"
         echo "  key_pair_name = $current_key_pair"
         echo "  ssh_key_file  = $current_key_file"
-
-        if [[ "$PROMPT_ONLY_UNSET" == "true" ]]; then
-            return
-        fi
+        echo "  create_key_pair = $current_create_key_pair"
 
         if [[ "$PROMPT_ONLY_UNSET" == "true" ]]; then
             return

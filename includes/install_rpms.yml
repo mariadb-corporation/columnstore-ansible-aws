@@ -258,9 +258,23 @@
   tasks:
 
   # Adjust to download maxscale rpm
-  # - name: "Download MariaDB RPMs using cs_package_manager script"
-  #   command: bash {{ mariadb_rpms_path }}/cs_package_manager.sh {{ cs_package_manager_custom_version }} --directory {{ mariadb_rpms_path }}
-  #   when: cs_package_manager_custom_version is defined and cs_package_manager_custom_version != ""
+  - name: "Download MariaDB RPMs using cs_package_manager script"
+    command: >-
+      bash {{ mariadb_rpms_path }}/cs_package_manager.sh download {{ cs_package_manager_custom_version }}
+      -d {{ mariadb_rpms_path }}
+      {% if dev_drone_key is defined and dev_drone_key != "" %}-dev {{ dev_drone_key }}{% endif %}
+    register: cs_package_manager_output
+    when: cs_package_manager_custom_version is defined and cs_package_manager_custom_version != "" and cs_package_manager_custom_version is not none
+
+  - name: "cs_package_manager output"
+    debug:
+      msg: "{{ cs_package_manager_output.stdout }}"
+    when: cs_package_manager_custom_version is defined and cs_package_manager_custom_version != "" and cs_package_manager_custom_version is not none and cs_package_manager_output is defined
+
+  - name: "cs_package_manager errors"
+    debug:
+      msg: "{{ cs_package_manager_output.stderr }}"
+    when: cs_package_manager_custom_version is defined and cs_package_manager_custom_version != "" and cs_package_manager_custom_version is not none and cs_package_manager_output is defined and cs_package_manager_output.stderr != ""
 
   - name: "Check for RPM files in the directory"
     find:

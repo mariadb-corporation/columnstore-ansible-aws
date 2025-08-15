@@ -194,7 +194,7 @@ choose_distro() {
         ["Ubuntu 24.04"]="ami-05f991c49d264708f"
         ["Ubuntu 22.04"]="ami-0ec1bf4a8f92e7bd1"
         ["Ubuntu 20.04"]="ami-01f99b4d609a9f41e"
-        ["Rocky 9"]="ami-0564a7e650e9e8d5a"
+        ["Rocky 9"]="ami-0adebe3adcec1fa34"
         ["Rocky 8"]="ami-0f74cc83310468775"
         ["Debian 12"]="ami-03420506796dd6873"
     )

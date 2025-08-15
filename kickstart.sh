@@ -500,6 +500,18 @@ choose_aws_key_pair() {
             echo "Selected key pair: $selected_key"
             echo "Using private key file: $selected_pem"
 
+            # Check if the PEM file has correct permissions (should be 400)
+            pem_perms=$(stat -c "%a" "$selected_pem" 2>/dev/null)
+            if [ "$pem_perms" != "400" ]; then
+                echo "PEM file '$selected_pem' has permissions $pem_perms, correcting to 400..."
+                chmod 400 "$selected_pem"
+                if [ $? -eq 0 ]; then
+                    echo "Permissions for '$selected_pem' set to 400."
+                else
+                    echo "Failed to set permissions for '$selected_pem'."
+                fi
+            fi
+
             set_var_value key_pair_name "$selected_key"
             set_var_value ssh_key_file "$selected_pem"
         else

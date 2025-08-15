@@ -101,11 +101,11 @@
       - (package_files.matched | default(0)) > 0
 
   - name: "Installing MariaDB DEBs from directory"
-    apt:
-      deb: "{{ item }}"
-      state: present
-      update_cache: yes
-    loop: "{{ package_files.files | map(attribute='path') | list }}"
+    command: >-
+      apt-get install -y --allow-downgrades
+      {{ package_files.files | map(attribute='path') | join(' ') }}
+    environment:
+      DEBIAN_FRONTEND: noninteractive
     when:
       - ansible_os_family == "Debian"
       - (package_files.matched | default(0)) > 0
@@ -297,11 +297,11 @@
       - (package_files.matched | default(0)) > 0
 
   - name: "Installing MariaDB DEBs from directory for maxscale"
-    apt:
-      deb: "{{ item }}"
-      state: present
-      update_cache: yes
-    loop: "{{ package_files.files | map(attribute='path') | list }}"
+    command: >-
+      apt-get install -y --allow-downgrades
+      {{ package_files.files | map(attribute='path') | join(' ') }}
+    environment:
+      DEBIAN_FRONTEND: noninteractive
     when:
       - ansible_os_family == "Debian"
       - (package_files.matched | default(0)) > 0

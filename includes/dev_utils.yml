@@ -24,6 +24,7 @@
 
           if [ -z "$host_alias" ]; then
               echo "Usage: $0 <host> [command]"
+              echo "       $0 <host> -c <remote_path> <local_path>  # copy from remote to local using scp"
               echo "Available hosts:"
               for h in "${!HOSTS[@]}"; do
                   echo "  $h"
@@ -39,6 +40,19 @@
 
           key_file="{{ ssh_key_file }}"
           user="{{ hostvars[groups['primary'][0]].primary_os_user }}"
+
+          # scp mode: download from remote to local
+          if [ "${1:-}" = "-c" ] || [ "${1:-}" = "--scp" ]; then
+              shift || true
+              remote_path="${1:-}"
+              local_path="${2:-}"
+              if [ -z "$remote_path" ] || [ -z "$local_path" ]; then
+                  echo "Usage: $0 <host> -c <remote_path> <local_path>"
+                  exit 3
+              fi
+              scp -i "$key_file" "${user}@${ip}:$remote_path" "$local_path"
+              exit 0
+          fi
 
           if [ -z "$1" ]; then
               ssh -i "$key_file" "$user@$ip"

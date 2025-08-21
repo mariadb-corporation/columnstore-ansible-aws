@@ -32,14 +32,14 @@ Open a terminal window and clone the repository:
 2.  `cd` into the newly cloned folder
 3.  `./kickstart.sh` This script will help you fill in the required Terraform variables (AWS credentials, distro, etc). It will create a `terraform.tfvars` file with the variables you provided.
 4.  You can manually edit the `terraform.tfvars` file to change any of the variables that were not set by `kickstart.sh`. See `variables.tf` for variable descriptions.
-5.  `terraform init`
-6.  `terraform plan` (Optional)
-7.  `terraform apply --auto-approve`
-8.  `ansible-playbook provision.yml`
+5.  `./deploy.sh` This script will call Terraform to create the infrastructure and then Ansible to provision the nodes. Please note that if Terraform already has the infrastructure created, `deploy.sh` will DESTROY the existing infrastructure and create a new one.
 
 When the playbook completes, it will also create `connect.sh` in the current directory. This script will allow you to connect to the created nodes by name (e.g. `./connect.sh mcs1`).
 
 Further information can be found on our [official deployment guide](https://mariadb.com/docs/deploy/enterprise-multi-columnstore/).
+
+## Possible Problems
+* If you get an error like `Failed to update apt cache: E:Failed to fetch https://dlm.mariadb.com/repo/<token>/<rest_of_url>  403  Forbidden` when provisioning, you'll have to follow that link and accept the terms and conditions, then re-run `deploy.sh`.
 
 ## Current Approved AWS Image(s)
 AMI OS|AMI ID|Region|Zone|

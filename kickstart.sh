@@ -194,7 +194,7 @@ choose_distro() {
         ["Ubuntu 24.04"]="ami-05f991c49d264708f"
         ["Ubuntu 22.04"]="ami-0ec1bf4a8f92e7bd1"
         ["Ubuntu 20.04"]="ami-01f99b4d609a9f41e"
-        ["Rocky 9"]="ami-0564a7e650e9e8d5a"
+        ["Rocky 9"]="ami-0adebe3adcec1fa34"
         ["Rocky 8"]="ami-0f74cc83310468775"
         ["Debian 12"]="ami-03420506796dd6873"
     )
@@ -381,7 +381,7 @@ select_or_create_aws_profile() {
         echo "If you are using temporary credentials, you may need to set this."
         set_token=$(ask_boolean "set_aws_session_token" "Do you want to set an AWS session token?" "false")
     fi
-    if [[ "$set_token" =~ ^[Yy]$ ]]; then
+    if [[ "$set_token" == "true" ]]; then
         read -p "Enter AWS session token (leave blank to unset): " session_token
         if [ -n "$session_token" ]; then
             set_var_value aws_session_token "$session_token"
@@ -500,6 +500,18 @@ choose_aws_key_pair() {
             echo "Selected key pair: $selected_key"
             echo "Using private key file: $selected_pem"
 
+            # Check if the PEM file has correct permissions (should be 400)
+            pem_perms=$(stat -c "%a" "$selected_pem" 2>/dev/null)
+            if [ "$pem_perms" != "400" ]; then
+                echo "PEM file '$selected_pem' has permissions $pem_perms, correcting to 400..."
+                chmod 400 "$selected_pem"
+                if [ $? -eq 0 ]; then
+                    echo "Permissions for '$selected_pem' set to 400."
+                else
+                    echo "Failed to set permissions for '$selected_pem'."
+                fi
+            fi
+
             set_var_value key_pair_name "$selected_key"
             set_var_value ssh_key_file "$selected_pem"
         else
@@ -550,7 +562,7 @@ check_or_choose_aws_key_pair() {
         echo "  ssh_key_file  = $current_key_file"
 
         change_keys=$(ask_boolean "change_aws_key_pair" "Do you want to change it?" "false")
-        if [[ ! "$change_keys" =~ ^[Yy]$ ]]; then
+        if [[ "$change_keys" == "false" ]]; then
             echo "Keeping current key pair."
             echo ""
             return
@@ -1014,7 +1026,7 @@ if [ -n "$final_subnet_id" ]; then
 fi
 
 propose_change_value "num_columnstore_nodes" false "Number of ColumnStore nodes in the cluster"
-propose_change_value "num_maxscale_instances" false "Number of MaxScale nodes in the cluster"
+propose_change_value "num_maxscale_instances" false "Number of MaxScale nodes in the cluster (at least 1)"
 
 propose_change_value "aws_mariadb_instance_size"
 

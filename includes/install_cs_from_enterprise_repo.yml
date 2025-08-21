@@ -1,0 +1,36 @@
+---
+
+- hosts: "primary,replicas"
+  become: yes
+  become_user: root
+  vars_files:
+    - '../inventory/group_vars/distro/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}.yml'
+    - '../inventory/group_vars/all.yml'
+
+  tasks:
+
+  - name: "Getting MariaDB Enterprise Repo Setup Script"
+    get_url:
+      url: https://dlm.mariadb.com/enterprise-release-helpers/mariadb_es_repo_setup
+      dest: /usr/local/bin/mariadb_es_repo_setup
+      mode: 'a+x'
+
+  - name: "Adding MariaDB Enterprise Repo Script Dependency"
+    apt:
+      name: apt-transport-https
+      state: present
+    when: ansible_distribution|lower == 'ubuntu'
+
+  - name: "Setting Up MariaDB Enterprise Repo"
+    command: /usr/local/bin/mariadb_es_repo_setup --token={{ enterprise_token }} --mariadb-server-version='{{ mariadb_version }}' --mariadb-maxscale-version='{{ maxscale_version }}' --apply
+
+  - name: "Installing MariaDB Items"
+    package:
+      name: '{{ item }}'
+      state: present
+      update_cache: yes
+    with_items:
+      - '{{ mariadb_client }}'
+      - '{{ mariadb_server }}'
+      - '{{ mariadb_columnstore }}'
+

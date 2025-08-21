@@ -41,19 +41,25 @@
   import_playbook: includes/configure_nvme.yml
   when: mariadb_has_nvme
 
-- name: "Install MariaDB RPMs"
-  import_playbook: includes/install_rpms.yml
+- name: "Install ColumnStore from packages"
+  import_playbook: includes/install_cs_from_pkgs.yml
   when: mariadb_rpms_path is defined and mariadb_rpms_path != "" and mariadb_rpms_path is not none
 
-- name: "Installing MariaDB"
-  import_playbook: includes/install.yml
+- name: "Install ColumnStore from Enterprise repo"
+  import_playbook: includes/install_cs_from_enterprise_repo.yml
   when: mariadb_rpms_path is not defined or mariadb_rpms_path == "" or mariadb_rpms_path is none
+
+- name: "ColumnStore setup"
+  import_playbook: includes/columnstore_setup.yml
 
 - name: "Setting Up ColumnStore Cluster"
   import_playbook: includes/cluster.yml
 
 - name: "Validating Installation"
   import_playbook: includes/validate.yml
+
+- name: "Install MaxScale"
+  import_playbook: includes/install_maxscale.yml
 
 - name: "Configuring MaxScale"
   import_playbook: includes/maxscale.yml

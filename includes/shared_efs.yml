@@ -23,7 +23,7 @@
 
     - name: Check if EFS mount is currently mounted
       become: true
-      command: mountpoint -q {{ shared_efs_mount_point }}
+      command: mount | grep -q "on {{ shared_efs_mount_point }} type nfs4"
       register: mount_output
       ignore_errors: true
 
@@ -63,7 +63,7 @@
 
       - name: Check if EFS mount is currently mounted
         become: true
-        command: mountpoint -q {{ shared_efs_mount_point }}
+        shell: mount | grep -q "on {{ shared_efs_mount_point }} type nfs4"
         register: mount_output
         ignore_errors: true
 

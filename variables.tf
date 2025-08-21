@@ -284,3 +284,11 @@ variable "shared_efs_mount_point" {
   type        = string
   default     = "/shared"
 }
+
+######## Sentry integration for CMAPI
+
+variable "sentry_dsn" {
+  description = "Sentry DSN to write into CMAPI config on columnstore hosts (leave empty to skip)"
+  type        = string
+  default     = ""
+}

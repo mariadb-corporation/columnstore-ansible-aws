@@ -67,3 +67,6 @@
 - name: "Configuring shared EFS"
   import_playbook: includes/shared_efs.yml
   when: create_shared_efs | bool
+
+- name: "Setup Sentry integration for CMAPI"
+  import_playbook: includes/sentry.yml

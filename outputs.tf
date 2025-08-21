@@ -97,6 +97,7 @@ resource "local_file" "AnsibleVariables" {
       shared_efs_mount_point   = var.shared_efs_mount_point,
       shared_efs_include_dev_host = var.shared_efs_include_dev_host,
       shared_efs_dns_name      = var.create_shared_efs ? aws_efs_file_system.shared_efs[0].dns_name : "",
+      sentry_dsn               = var.sentry_dsn,
     }
   )
   filename = "inventory/group_vars/all.yml"

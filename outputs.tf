@@ -77,6 +77,7 @@ resource "local_file" "AnsibleVariables" {
       maxscale_pass            = var.maxscale_pass,
       maxscale_user            = var.maxscale_user,
       maxscale_version         = var.maxscale_version,
+      deployment_prefix        = var.deployment_prefix,
       pcs_pass                 = var.pcs_pass,
       repli_pass               = var.repli_pass,
       repli_user               = var.repli_user,

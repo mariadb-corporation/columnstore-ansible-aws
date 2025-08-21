@@ -12,17 +12,18 @@
     meta: end_play
     when: (sentry_dsn | default('')) | length == 0
 
-  - name: "Ensure [Sentry] section with dsn is present in cmapi_server.conf"
+  - name: "Write DSN to [Sentry] section"
     ini_file:
       path: "/etc/columnstore/cmapi_server.conf"
       section: "Sentry"
       option: "dsn"
-      value: "{{ sentry_dsn }}"
+      value: "'{{ sentry_dsn }}'"
       create: yes
 
-  - name: "Restart CMAPI service if DSN was written"
-    systemd:
-      name: mariadb-columnstore-cmapi
-      state: restarted
-  
-
+  - name: "Write environment to [Sentry] section"
+    ini_file:
+      path: "/etc/columnstore/cmapi_server.conf"
+      section: "Sentry"
+      option: "environment"
+      value: "'{{ deployment_prefix }}'"
+      create: yes

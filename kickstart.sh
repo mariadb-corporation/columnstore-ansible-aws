@@ -1030,6 +1030,16 @@ propose_change_value "num_maxscale_instances" false "Number of MaxScale nodes in
 
 propose_change_value "aws_mariadb_instance_size"
 
+# Optional Sentry DSN for CMAPI
+cur_sentry_dsn=$(get_current_var_value "sentry_dsn" "")
+read -p "Enter Sentry DSN to configure in CMAPI (leave empty to skip) ['${cur_sentry_dsn}']: " new_sentry_dsn
+if [ -n "$new_sentry_dsn" ]; then
+    set_var_value "sentry_dsn" "$new_sentry_dsn" true
+elif [ -n "$cur_sentry_dsn" ]; then
+    # keep existing
+    set_var_value "sentry_dsn" "$cur_sentry_dsn" true
+fi
+
 propose_change_value "columnstore_node_root_block_size" false "Number of GB for EBS root storage on columnstore nodes"
 
 echo ""

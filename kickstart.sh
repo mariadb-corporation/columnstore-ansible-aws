@@ -83,9 +83,17 @@ get_current_var_value() {
     local default_value="${2:-}"
 
     if [ -f terraform.tfvars ]; then
-        local value=$(grep -E "^$var_name\s*=" terraform.tfvars | awk -F '=' '{print $2}' | tr -d ' "')
-        if [ -n "$value" ]; then
-            echo "$value"
+        local line
+        line=$(grep -E "^$var_name[[:space:]]*=" terraform.tfvars | head -n1)
+        if [ -n "$line" ]; then
+            # Extract RHS after first '=' and trim surrounding spaces and optional quotes, preserving inner spaces
+            local value
+            value=$(echo "$line" | sed -E 's/^[^=]+=//; s/^[[:space:]]*\"?//; s/\"?[[:space:]]*$//')
+            if [ -n "$value" ]; then
+                echo "$value"
+            else
+                echo "$default_value"
+            fi
         else
             echo "$default_value"
         fi
@@ -1030,6 +1038,16 @@ propose_change_value "num_maxscale_instances" false "Number of MaxScale nodes in
 
 propose_change_value "aws_mariadb_instance_size"
 
+# Optional Sentry DSN for CMAPI
+cur_sentry_dsn=$(get_current_var_value "sentry_dsn" "")
+read -p "Enter Sentry DSN to configure in CMAPI (leave empty to skip) ['${cur_sentry_dsn}']: " new_sentry_dsn
+if [ -n "$new_sentry_dsn" ]; then
+    set_var_value "sentry_dsn" "$new_sentry_dsn" true
+elif [ -n "$cur_sentry_dsn" ]; then
+    # keep existing
+    set_var_value "sentry_dsn" "$cur_sentry_dsn" true
+fi
+
 propose_change_value "columnstore_node_root_block_size" false "Number of GB for EBS root storage on columnstore nodes"
 
 echo ""
@@ -1039,6 +1057,31 @@ propose_change_value "deployment_prefix" false "Enter a unique prefix for this d
 
 propose_change_value "dev_drone_key" false "Enter CI bucket name if you want to be able to install dev builds"
 echo ""
+
+# Explain custom version format for cs_package_manager
+note "You can set a custom MariaDB Server/ColumnStore version via cs_package_manager_custom_version."
+note "Example for CI/dev builds:   dev stable-23.10 cron/1443"
+note "Example for Enterprise:      enterprise 10.6.12-8"
+propose_change_value "cs_package_manager_custom_version" false "Enter custom version for cs_package_manager (leave blank for default)"
+echo ""
+
+# Warn if user selected CI/dev builds but dev_drone_key is not set
+cv=$(get_current_var_value "cs_package_manager_custom_version")
+if [ -n "$cv" ]; then
+    if [[ "$cv" =~ ^dev[[:space:]] ]]; then
+        ddk=$(get_current_var_value "dev_drone_key")
+        if [ -z "$ddk" ]; then
+            warn "You selected a dev/CI build but 'dev_drone_key' is not set. You won't be able to use CI builds without it."
+        fi
+    fi
+
+    # If a custom version is set and mariadb_rpms_path is not set, set it implicitly
+    cur_pkgs_path=$(get_current_var_value "mariadb_rpms_path")
+    if [ -z "$cur_pkgs_path" ]; then
+        set_var_value "mariadb_rpms_path" "/tmp/pkgs"
+        note "Set 'mariadb_rpms_path' to '/tmp/pkgs' because a custom version was specified."
+    fi
+fi
 
 handle_additional_tags
 

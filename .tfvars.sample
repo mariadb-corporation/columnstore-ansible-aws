@@ -107,3 +107,5 @@ dev_drone_key = ""
 create_shared_efs = false
 shared_efs_include_dev_host = false
 shared_efs_mount_point = "/shared"
+
+sentry_dsn = ""

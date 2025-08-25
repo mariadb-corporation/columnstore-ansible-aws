@@ -23,7 +23,7 @@
 
     - name: Check if EFS mount is currently mounted
       become: true
-      command: mount | grep -q "on {{ shared_efs_mount_point }} type nfs4"
+      shell: 'grep -qE " {{ shared_efs_mount_point | regex_escape() }} nfs4 " /proc/mounts'
       register: mount_output
       ignore_errors: true
 
@@ -63,7 +63,7 @@
 
       - name: Check if EFS mount is currently mounted
         become: true
-        shell: mount | grep -q "on {{ shared_efs_mount_point }} type nfs4"
+        shell: 'grep -qE " {{ shared_efs_mount_point | regex_escape() }} nfs4 " /proc/mounts'
         register: mount_output
         ignore_errors: true
 

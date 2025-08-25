@@ -1,0 +1,29 @@
+---
+
+- hosts: "primary,replicas"
+  become: yes
+  become_user: root
+  vars_files:
+    - '../inventory/group_vars/distro/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}.yml'
+    - '../inventory/group_vars/all.yml'
+
+  tasks:
+  - name: "Skip if no sentry_dsn provided"
+    meta: end_play
+    when: (sentry_dsn | default('')) | length == 0
+
+  - name: "Write DSN to [Sentry] section"
+    ini_file:
+      path: "/etc/columnstore/cmapi_server.conf"
+      section: "Sentry"
+      option: "dsn"
+      value: "'{{ sentry_dsn }}'"
+      create: yes
+
+  - name: "Write environment to [Sentry] section"
+    ini_file:
+      path: "/etc/columnstore/cmapi_server.conf"
+      section: "Sentry"
+      option: "environment"
+      value: "'{{ deployment_prefix }}'"
+      create: yes

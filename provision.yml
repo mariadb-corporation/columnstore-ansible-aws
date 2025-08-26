@@ -49,6 +49,9 @@
   import_playbook: includes/install_cs_from_enterprise_repo.yml
   when: mariadb_rpms_path is not defined or mariadb_rpms_path == "" or mariadb_rpms_path is none
 
+- name: "Setup Sentry integration for CMAPI"
+  import_playbook: includes/sentry.yml
+
 - name: "ColumnStore setup"
   import_playbook: includes/columnstore_setup.yml
 

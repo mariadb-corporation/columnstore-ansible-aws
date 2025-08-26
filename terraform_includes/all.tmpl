@@ -21,6 +21,7 @@ s3_bucket: ${s3_bucket}
 s3_use_http: ${s3_use_http}
 s3_ssl_disable: ${s3_ssl_disable}
 s3_port:
+deployment_prefix: ${deployment_prefix}
 
 # Database Credentials
 admin_user: ${admin_user}
@@ -57,3 +58,6 @@ shared_efs_volume_id: ${shared_efs_volume_id}
 shared_efs_mount_point: "${shared_efs_mount_point}"
 shared_efs_include_dev_host: ${shared_efs_include_dev_host}
 shared_efs_dns_name: "${shared_efs_dns_name}"
+
+# Sentry
+sentry_dsn: "${sentry_dsn}"

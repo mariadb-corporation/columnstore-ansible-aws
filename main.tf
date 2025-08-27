@@ -11,6 +11,40 @@ data "aws_vpc" "selected" {
   id = var.aws_vpc
 }
 
+# If create_key_pair is true, we create a new key pair
+resource "tls_private_key" "generated_key" {
+  count = var.create_key_pair ? 1 : 0
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+resource "aws_key_pair" "generated_key" {
+  count = var.create_key_pair ? 1 : 0
+  key_name   = local.effective_key_pair_name
+  public_key = tls_private_key.generated_key[0].public_key_openssh
+  tags = {
+    Name = local.effective_key_pair_name,
+    "Created by" = "Terraform"
+  }
+}
+
+resource "local_file" "private_key" {
+  count    = var.create_key_pair ? 1 : 0
+  content  = tls_private_key.generated_key[0].private_key_pem
+  filename = var.ssh_key_file
+  file_permission = "0600"
+}
+
+# Explicitly wait for the key pair to be created before using it
+# This is a workaround for the fact that the key pair is not immediately available after creation
+resource "null_resource" "wait_for_key_pair" {
+  count = var.create_key_pair ? 1 : 0
+  depends_on = [aws_key_pair.generated_key]
+  provisioner "local-exec" {
+    command = "sleep 10"
+  }
+}
+
 resource "aws_security_group" "mcs_traffic" {
   name   = "${var.deployment_prefix}_${var.security_group_name}"
   vpc_id = var.aws_vpc
@@ -78,7 +112,7 @@ resource "aws_instance" "columnstore_node" {
   subnet_id         = var.aws_subnet
   availability_zone = var.aws_zone
   instance_type     = var.aws_mariadb_instance_size
-  key_name          = var.key_pair_name
+  key_name          = local.effective_key_pair_name
   associate_public_ip_address = true
   root_block_device {
     volume_size = var.columnstore_node_root_block_size
@@ -93,6 +127,7 @@ resource "aws_instance" "columnstore_node" {
     },
     var.additional_tags
   )
+  depends_on = [null_resource.wait_for_key_pair]
 }
 
 resource "aws_instance" "maxscale_instance" {
@@ -101,7 +136,7 @@ resource "aws_instance" "maxscale_instance" {
   subnet_id         = var.aws_subnet
   availability_zone = var.aws_zone
   instance_type     = var.aws_maxscale_instance_size
-  key_name          = var.key_pair_name
+  key_name          = local.effective_key_pair_name
   associate_public_ip_address = true
   root_block_device {
     volume_size = var.maxscale_node_root_block_size
@@ -114,6 +149,7 @@ resource "aws_instance" "maxscale_instance" {
     },
     var.additional_tags
   )
+  depends_on = [null_resource.wait_for_key_pair]
 }
 
 resource "aws_s3_bucket" "s3_bucket" {
@@ -165,4 +201,9 @@ resource "aws_efs_mount_target" "shared_efs_target" {
   security_groups = [
     aws_security_group.mcs_traffic.id
   ]
+}
+
+# If we create a new key pair, prepend its name with the deployment prefix to avoid conflicts with existing key pairs
+locals {
+  effective_key_pair_name = var.create_key_pair ? "${var.deployment_prefix}_${var.key_pair_name}" : var.key_pair_name
 }

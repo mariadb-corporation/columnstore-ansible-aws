@@ -66,30 +66,18 @@
       msg: "{{ cs_package_manager_output.stderr }}"
     when: cs_package_manager_custom_version is defined and cs_package_manager_custom_version != "" and cs_package_manager_custom_version is not none and cs_package_manager_output is defined and cs_package_manager_output.stderr != ""
 
-  - name: "Check for RPM files in the directory"
+  - name: "Check for package files in the directory"
     find:
       paths: "{{ mariadb_rpms_path }}"
-      patterns: "*.rpm"
+      patterns: "{{ '*.rpm' if ansible_os_family == 'RedHat' else '*.deb' }}"
       use_regex: false
     register: package_files
-    when: ansible_os_family == "RedHat"
-
-  - name: "Check for DEB files in the directory"
-    find:
-      paths: "{{ mariadb_rpms_path }}"
-      patterns: "*.deb"
-      use_regex: false
-    register: package_files
-    when: ansible_os_family == "Debian"
 
   - name: "Fail if no package files are found in the directory"
     fail:
       msg: "The directory {{ mariadb_rpms_path }} does not contain any {{ 'RPM' if ansible_os_family == 'RedHat' else 'DEB' }} files."
-    when: (package_files.matched | default(0)) == 0
-
-  - name: "Debug list of package file paths found"
-    debug:
-      msg: "{{ package_files.files | map(attribute='path') | list }}"
+    when: ((package_files.files is defined) and ((package_files.files | length) == 0)) or
+          ((package_files.files is not defined) and ((package_files.matched | default(0)) == 0))
 
   - name: "Installing MariaDB RPMs from directory"
     yum:

@@ -22,9 +22,10 @@ mariadb_repo: /etc/yum.repos.d/mariadb.repo
 mariadb_server: MariaDB-server
 mariadb_shared: MariaDB-shared
 mariadb_socket: /var/lib/mysql/mysql.sock
-maxscale: maxscale-enterprise
+maxscale: maxscale
 mlocate: mlocate
 nano: nano
+nfs_utils: nfs-utils
 pcs: pcs
 pcp_zeroconf: pcp-zeroconf
 pre_task: dnf -y install epel-release && dnf -y install glibc-locale-source glibc-langpack-en python3 libxcrypt-compat

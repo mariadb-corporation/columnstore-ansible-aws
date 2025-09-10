@@ -55,6 +55,7 @@ aws_secret_key = ""
 aws_session_token = ""
 aws_profile = ""
 
+create_key_pair = null
 key_pair_name = ""
 ssh_key_file = ""
 

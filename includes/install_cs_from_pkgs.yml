@@ -33,7 +33,7 @@
 
   - name: "Download cs_package_manager script"
     get_url:
-      url: "https://raw.githubusercontent.com/mariadb-corporation/mariadb-columnstore-engine/refs/heads/cs_package_manager_v3.5/cmapi/scripts/cs_package_manager.sh"
+      url: "https://raw.githubusercontent.com/mariadb-corporation/mariadb-columnstore-engine/refs/heads/stable-23.10/cmapi/scripts/cs_package_manager.sh"
       dest: "{{ mariadb_rpms_path }}/cs_package_manager.sh"
       mode: '0755'
     when: cs_package_manager_custom_version is defined and cs_package_manager_custom_version != "" and cs_package_manager_custom_version is not none
@@ -48,10 +48,10 @@
 
   tasks:
 
-  - name: "Download MariaDB RPMs using cs_package_manager script"
+  - name: "Download MariaDB packages using cs_package_manager script"
     command: >-
       bash {{ mariadb_rpms_path }}/cs_package_manager.sh download {{ cs_package_manager_custom_version }}
-      -d {{ mariadb_rpms_path }}
+      -d {{ mariadb_rpms_path }} --with-dev
       {% if dev_drone_key is defined and dev_drone_key != "" %}-dev {{ dev_drone_key }}{% endif %}
     register: cs_package_manager_output
     when: cs_package_manager_custom_version is defined and cs_package_manager_custom_version != "" and cs_package_manager_custom_version is not none

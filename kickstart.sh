@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 # This script is used to fill Terraform variables and generally help set up the Columnstore cluster
 set -e # Exit on errors
+set -o pipefail
+
+# Helpful error tracer
+trap 'echo "ERROR: Command failed on line $LINENO: $BASH_COMMAND" >&2' ERR
+
+# Enable shell tracing when DEBUG_KICKSTART=1 is set
+if [[ "${DEBUG_KICKSTART:-0}" == "1" ]]; then
+  set -x
+fi
 
 AWS_REGION="us-west-2"
 
@@ -29,6 +38,19 @@ in_green() {
 log_change() {
     local msg="$1"
     CHANGELOG+=("$msg")
+}
+
+# Safely mask sensitive values for display
+mask_value() {
+    local v="$1"
+    local len=${#v}
+    if (( len == 0 )); then
+        echo "(empty)"
+    elif (( len <= 6 )); then
+        echo "${v:0:1}***${v: -1}"
+    else
+        echo "${v:0:3}***${v: -3}"
+    fi
 }
 
 get_distro_type() {
@@ -327,98 +349,210 @@ show_aws_identity() {
         --output table
 }
 
-# Let user select or create a profile
-select_or_create_aws_profile() {
-    if [ ! -f ~/.aws/credentials ]; then
-        echo "No AWS profiles found. Creating a new one..."
-        aws configure
+is_sso_profile() {
+    local profile_name="$1"
+    # If profile has sso parameters in config, it is SSO
+    local sso_start_url sso_session
+    sso_start_url=$(aws configure get sso_start_url --profile "$profile_name" 2>/dev/null || true)
+    sso_session=$(aws configure get sso_session --profile "$profile_name" 2>/dev/null || true)
+    if [[ -n "$sso_start_url" || -n "$sso_session" ]]; then
+        echo "true"
+    else
+        echo "false"
+    fi
+}
+
+ensure_profile_credentials() {
+    local profile_name="$1"
+    local is_sso
+    is_sso=$(is_sso_profile "$profile_name")
+
+    # Always set the aws_profile variable
+    set_var_value aws_profile "$profile_name"
+
+    if [[ "$is_sso" == "true" ]]; then
+        echo "Detected SSO profile: $profile_name"
+        # Try to export credentials
+        local creds_json expiration now_epoch exp_epoch
+        # Use 'process' format which outputs JSON suitable for parsing
+        creds_json=$(aws configure export-credentials --profile "$profile_name" --format process 2>/dev/null || true)
+
+        if [[ -n "$creds_json" ]]; then
+            # 'process' format returns top-level fields; also support nested Credentials and various casings
+            expiration=$(echo "$creds_json" | jq -r '(.Credentials.Expiration // .Expiration // .expiration // empty)' 2>/dev/null || true)
+        fi
+
+        # Determine if we need to login
+        local need_login="false"
+        if [[ -z "$creds_json" ]]; then
+            # If export-credentials is empty, check whether the profile already works; if yes, don't force login
+            if AWS_PROFILE="$profile_name" aws sts get-caller-identity >/dev/null 2>&1; then
+                need_login="false"
+            else
+                need_login="true"
+            fi
+        else
+            if [[ -z "$expiration" || "$expiration" == "null" ]]; then
+                # If we cannot parse expiration, check if the profile is currently usable
+                if AWS_PROFILE="$profile_name" aws sts get-caller-identity >/dev/null 2>&1; then
+                    need_login="false"
+                else
+                    need_login="true"
+                fi
+            else
+                now_epoch=$(date -u +%s)
+                exp_epoch=$(date -u -d "$expiration" +%s 2>/dev/null || echo 0)
+                minutes_left=$(( (exp_epoch - now_epoch) / 60 ))
+                if (( minutes_left < 20 )); then
+                    echo "AWS credentials are expiring in $minutes_left minutes, re-authenticating..."
+                    need_login="true"
+                else
+                    echo "AWS credentials are valid for $minutes_left minutes, no need to re-authenticate."
+                fi
+            fi
+        fi
+
+        if [[ "$need_login" == "true" ]]; then
+            echo "Logging in to AWS SSO for profile '$profile_name' (device code flow)..."
+            aws sso login --profile "$profile_name" --use-device-code
+            # Re-export after login (process format emits JSON)
+            creds_json=$(aws configure export-credentials --profile "$profile_name" --format process)
+        fi
+
+        # Parse and store credentials
+        local access_key secret_key session_token
+        access_key=$(echo "$creds_json" | jq -r '.Credentials.AccessKeyId // .AccessKeyId')
+        secret_key=$(echo "$creds_json" | jq -r '.Credentials.SecretAccessKey // .SecretAccessKey')
+        session_token=$(echo "$creds_json" | jq -r '.Credentials.SessionToken // .SessionToken')
+
+        if [[ -z "$access_key" || -z "$secret_key" || -z "$session_token" ]]; then
+            echo "Failed to obtain SSO temporary credentials for profile '$profile_name'"
+            return 1
+        fi
+
+        set_var_value aws_access_key "$access_key"
+        set_var_value aws_secret_key "$secret_key"
+        set_var_value aws_session_token "$session_token"
+
+        echo "SSO credentials exported and saved to terraform.tfvars."
+    else
+        # Static or non-SSO profile
+        local key secret token
+        key=$(aws configure get aws_access_key_id --profile "$profile_name")
+        secret=$(aws configure get aws_secret_access_key --profile "$profile_name")
+        token=$(aws configure get aws_session_token --profile "$profile_name")
+
+        if [[ -z "$key" || -z "$secret" ]]; then
+            echo "Failed to extract credentials from non-SSO profile '$profile_name'"
+            return 1
+        fi
+        set_var_value aws_access_key "$key"
+        set_var_value aws_secret_key "$secret"
+        set_var_value aws_session_token "$token"
+        echo "Static credentials saved to terraform.tfvars."
     fi
 
+    # Show identity with the selected profile
+    AWS_PROFILE="$profile_name" show_aws_identity
+
+    # Make the selected profile active for the remainder of this script run
+    export AWS_PROFILE="$profile_name"
+    CURRENT_SELECTED_AWS_PROFILE="$profile_name"
+    return 0
+}
+
+# Let user select or create a profile (supports SSO)
+select_or_create_aws_profile() {
+    # Ensure AWS CLI v2 is available (already checked earlier)
     echo "Available AWS profiles:"
     local profiles=()
-    while IFS= read -r line; do
-        profiles+=("$(echo "$line" | sed 's/^\[\(.*\)\]$/\1/')")
-    done < <(grep '^\[' ~/.aws/credentials 2>/dev/null)
+    while IFS= read -r p; do
+        profiles+=("$p")
+    done < <(aws configure list-profiles 2>/dev/null)
 
+    if [ ${#profiles[@]} -eq 0 ]; then
+        echo "No AWS profiles found. You can create a standard or SSO profile (aws configure sso)."
+    fi
+
+    # Display with SSO markers
     local i=1
     for p in "${profiles[@]}"; do
-        echo "  [$i] $p"
+        local mark=""
+        if [[ $(is_sso_profile "$p") == "true" ]]; then
+            mark=" [SSO]"
+        fi
+        echo "  [$i] $p$mark"
         ((i++))
     done
-    echo "  [N] Create a new profile"
+    echo "  [N] Create a new standard profile"
     echo
+
+    # If terraform.tfvars already specifies aws_profile and it exists locally, offer to switch to it
+    local tfvars_profile
+    tfvars_profile=$(get_current_var_value "aws_profile")
+    if [[ -n "$tfvars_profile" ]]; then
+        local exists=false
+        for p in "${profiles[@]}"; do
+            if [[ "$p" == "$tfvars_profile" ]]; then
+                exists=true
+                break
+            fi
+        done
+        if $exists; then
+            if [[ "$(ask_boolean switch_to_tfvars_profile \"Detected aws_profile=\\\"$tfvars_profile\\\" in terraform.tfvars. Switch to it now?\" \"true\")" == "true" ]]; then
+                echo "Using profile: $tfvars_profile"
+                ensure_profile_credentials "$tfvars_profile"
+                return 0
+            fi
+        fi
+    fi
 
     read -p "Choose profile number or 'N': " choice
     local profile_name
 
-    if [[ "$choice" =~ ^[0-9]+$ && "$choice" -le ${#profiles[@]} && "$choice" -ge 1 ]]; then
+    if [[ "$choice" =~ ^[0-9]+$ && "$choice" -ge 1 && "$choice" -le ${#profiles[@]} ]]; then
         profile_name="${profiles[$((choice-1))]}"
-    else
+        echo "Using profile: $profile_name"
+    elif [[ "$choice" =~ ^[Nn]$ ]]; then
         read -p "Enter name for new profile: " profile_name
         aws configure --profile "$profile_name"
         log_change "Created new AWS profile '$profile_name'"
-    fi
-
-    echo "Using profile: $profile_name"
-
-    # Extract keys from chosen profile
-    local key secret
-    key=$(aws configure get aws_access_key_id --profile "$profile_name")
-    secret=$(aws configure get aws_secret_access_key --profile "$profile_name")
-
-    if [[ -z "$key" || -z "$secret" ]]; then
-        echo "Failed to extract credentials from profile '$profile_name'"
+    else
+        echo "Invalid choice."
         return 1
     fi
 
-    echo "Access key: ${key:0:4}********"
-
-    set_var_value aws_access_key "$key"
-    set_var_value aws_secret_key "$secret"
-
-    # Prompt for AWS session token (for MFA/temporary credentials)
-    local current_session_token
-    current_session_token=$(get_current_var_value "aws_session_token")
-    echo ""
-    if [ -n "$current_session_token" ]; then
-        local masked_token="${current_session_token:0:3}***${current_session_token: -3}"
-        echo "An AWS session token is currently set: $masked_token"
-        set_token=$(ask_boolean "change_aws_session_token" "Do you want to change or remove the AWS session token?" "false")
-    else
-        echo "Some AWS authentication methods (like MFA or SSO) require a session token."
-        echo "If you are using temporary credentials, you may need to set this."
-        set_token=$(ask_boolean "set_aws_session_token" "Do you want to set an AWS session token?" "false")
-    fi
-    if [[ "$set_token" == "true" ]]; then
-        read -p "Enter AWS session token (leave blank to unset): " session_token
-        if [ -n "$session_token" ]; then
-            set_var_value aws_session_token "$session_token"
-            log_change "Set aws_session_token in terraform.tfvars."
-        else
-            set_var_value aws_session_token ""
-            log_change "Removed aws_session_token from terraform.tfvars."
-        fi
-    fi
-
-    AWS_PROFILE="$profile_name" show_aws_identity
+    # After selection/creation, ensure we have usable credentials and save them
+    ensure_profile_credentials "$profile_name"
+    return 0
 }
 
 sync_terraform_vars_with_aws_credentials() {
-    local actual_key actual_secret actual_profile
+    local actual_key actual_secret actual_profile effective_profile is_sso
     local saved_key saved_secret saved_profile
     local need_update=false
 
-    actual_key=$(aws configure get aws_access_key_id)
-    actual_secret=$(aws configure get aws_secret_access_key)
-    actual_profile=${AWS_PROFILE:-default}
+    # Prefer the profile selected earlier in this script; fall back to environment; then default
+    effective_profile="${CURRENT_SELECTED_AWS_PROFILE:-${AWS_PROFILE:-default}}"
+    is_sso=$(is_sso_profile "$effective_profile")
+    # For SSO profiles, do NOT derive keys from 'aws configure get' (it will be empty). Keep existing exported keys.
+    if [[ "$is_sso" == "true" ]]; then
+        actual_key=$(get_current_var_value "aws_access_key")
+        actual_secret=$(get_current_var_value "aws_secret_key")
+    else
+        # Make aws configure get robust even if values are unset
+        actual_key=$(aws configure get aws_access_key_id --profile "$effective_profile" 2>/dev/null || true)
+        actual_secret=$(aws configure get aws_secret_access_key --profile "$effective_profile" 2>/dev/null || true)
+    fi
+    actual_profile="$effective_profile"
 
     saved_key=$(get_current_var_value "aws_access_key")
     saved_secret=$(get_current_var_value "aws_secret_key")
     saved_profile=$(get_current_var_value "aws_profile")
 
     if [[ "$actual_key" != "$saved_key" ]]; then
-        echo "terraform.tfvars aws_access_key: ${saved_key:0:3}***${saved_key: -3}"
-        echo "Current profile aws_access_key: ${actual_key:0:3}***${actual_key: -3}"
+        echo "terraform.tfvars aws_access_key: $(mask_value "$saved_key")"
+        echo "Current profile aws_access_key: $(mask_value "$actual_key")"
         need_update=true
     fi
 
@@ -428,7 +562,7 @@ sync_terraform_vars_with_aws_credentials() {
     fi
 
     if [[ "$actual_profile" != "$saved_profile" ]]; then
-        echo "terraform.tfvars aws_profile: $saved_profile"
+        echo "terraform.tfvars aws_profile: ${saved_profile:-'(empty)'}"
         echo "Current profile: $actual_profile"
         need_update=true
     fi
@@ -436,15 +570,21 @@ sync_terraform_vars_with_aws_credentials() {
     if $need_update; then
         local sync=$(ask_boolean "sync_aws_credentials" "Do you want to update terraform.tfvars with the current AWS CLI credentials and profile?" "true")
         if [[ "$sync" == "true" ]]; then
-            set_var_value aws_access_key "$actual_key"
-            set_var_value aws_secret_key "$actual_secret"
-            set_var_value aws_profile "$actual_profile"
+            # Update profile always; only update keys for non-SSO (SSO keys already exported earlier)
+            if [[ "$is_sso" == "true" ]]; then
+                set_var_value aws_profile "$actual_profile"
+            else
+                set_var_value aws_access_key "$actual_key"
+                set_var_value aws_secret_key "$actual_secret"
+                set_var_value aws_profile "$actual_profile"
+            fi
             echo "terraform.tfvars updated"
         else
             echo "terraform.tfvars not modified"
         fi
         echo ""
     fi
+    return 0
 }
 
 choose_aws_key_pair() {
@@ -948,13 +1088,43 @@ if aws sts get-caller-identity >/dev/null 2>&1; then
     aws configure list
     show_aws_identity
 
-    reauth=$(ask_boolean "reauthenticate" "Do you want to re-authenticate or switch AWS profile?" "false")
-    if [[ "$reauth" == "true" ]]; then
-        select_or_create_aws_profile
+    # If terraform.tfvars already specifies aws_profile, offer to switch to it immediately
+    tfvars_profile=$(get_current_var_value "aws_profile")
+    if [[ -n "$tfvars_profile" ]]; then
+        # Check that profile exists locally
+        if aws configure list-profiles | grep -qx "$tfvars_profile"; then
+            if [[ "$(ask_boolean switch_to_tfvars_profile_start \
+                "Detected aws_profile=\"$tfvars_profile\" in terraform.tfvars. Switch to it now?" \
+                "true")" == "true" ]]; then
+                echo "Using profile: $tfvars_profile"
+                ensure_profile_credentials "$tfvars_profile"
+                echo "Profile selection completed. Proceeding to sync credentials..."
+            else
+                reauth=$(ask_boolean "reauthenticate" "Do you want to re-authenticate or switch AWS profile?" "false")
+                if [[ "$reauth" == "true" ]]; then
+                    select_or_create_aws_profile
+                    echo "Profile selection completed. Proceeding to sync credentials..."
+                fi
+            fi
+        else
+            # tfvars references a non-existing local profile; fall back to regular prompt
+            reauth=$(ask_boolean "reauthenticate" "Do you want to re-authenticate or switch AWS profile?" "false")
+            if [[ "$reauth" == "true" ]]; then
+                select_or_create_aws_profile
+                echo "Profile selection completed. Proceeding to sync credentials..."
+            fi
+        fi
+    else
+        reauth=$(ask_boolean "reauthenticate" "Do you want to re-authenticate or switch AWS profile?" "false")
+        if [[ "$reauth" == "true" ]]; then
+            select_or_create_aws_profile
+            echo "Profile selection completed. Proceeding to sync credentials..."
+        fi
     fi
 else
     echo "User is not authenticated with AWS CLI yet"
     select_or_create_aws_profile
+    echo "Profile selection completed. Proceeding to sync credentials..."
 fi
 echo ""
 

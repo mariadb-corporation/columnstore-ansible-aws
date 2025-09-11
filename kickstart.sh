@@ -1130,6 +1130,39 @@ echo ""
 
 sync_terraform_vars_with_aws_credentials
 
+choose_distro
+echo ""
+
+note "The 'deployment_prefix' variable is used to uniquely identify your cluster resources."
+note "The default prefix 'testing' can cause conflicts with other clusters if not changed."
+note "If Sentry is enabled, this prefix is used to create a Sentry environment name."
+propose_change_value "deployment_prefix" false "Enter a unique prefix for this deployment"
+
+echo ""
+note "You can set a custom MariaDB Server/ColumnStore version via cs_package_manager_custom_version."
+note "Example for CI/dev builds:   dev stable-23.10 cron/1443"
+note "Example for Enterprise:      enterprise 10.6.12-8"
+propose_change_value "cs_package_manager_custom_version" false "Enter custom version for cs_package_manager (leave blank for default)"
+echo ""
+
+# Handle follow-ups when a custom version is set
+cv=$(get_current_var_value "cs_package_manager_custom_version")
+if [ -n "$cv" ]; then
+    if [[ "$cv" =~ ^dev[[:space:]] ]]; then
+        ddk=$(get_current_var_value "dev_drone_key")
+        if [ -z "$ddk" ]; then
+            warn "You selected a dev/CI build but 'dev_drone_key' is not set. You won't be able to use CI builds without it."
+        fi
+    fi
+
+    # If a custom version is set and mariadb_rpms_path is not set, set it implicitly
+    cur_pkgs_path=$(get_current_var_value "mariadb_rpms_path")
+    if [ -z "$cur_pkgs_path" ]; then
+        set_var_value "mariadb_rpms_path" "/tmp/pkgs"
+        note "Set 'mariadb_rpms_path' to '/tmp/pkgs' because a custom version was specified."
+    fi
+fi
+
 check_or_choose_aws_key_pair
 
 create_shared_efs=$(ask_boolean "create_shared_efs" "Do you want to create a EFS volume that is shared between hosts?" "$(get_current_var_value "create_shared_efs" "false")")
@@ -1177,8 +1210,6 @@ use_s3=$(ask_boolean "use_s3" "Do you want to use S3 in MCS setup?" "$cur_use_s3
 set_var_value "use_s3" "$use_s3"
 echo ""
 
-choose_distro
-
 check_or_choose_vpc_and_sg
 # Ensure the subnet is public
 final_subnet_id=$(get_current_var_value "aws_subnet")
@@ -1208,39 +1239,6 @@ elif [ -n "$cur_sentry_dsn" ]; then
 fi
 
 propose_change_value "columnstore_node_root_block_size" false "Number of GB for EBS root storage on columnstore nodes"
-
-echo ""
-note "The 'deployment_prefix' variable is used to uniquely identify your cluster resources."
-note "The default prefix 'testing' can cause conflicts with other clusters if not changed."
-propose_change_value "deployment_prefix" false "Enter a unique prefix for this deployment"
-
-propose_change_value "dev_drone_key" false "Enter CI bucket name if you want to be able to install dev builds"
-echo ""
-
-# Explain custom version format for cs_package_manager
-note "You can set a custom MariaDB Server/ColumnStore version via cs_package_manager_custom_version."
-note "Example for CI/dev builds:   dev stable-23.10 cron/1443"
-note "Example for Enterprise:      enterprise 10.6.12-8"
-propose_change_value "cs_package_manager_custom_version" false "Enter custom version for cs_package_manager (leave blank for default)"
-echo ""
-
-# Warn if user selected CI/dev builds but dev_drone_key is not set
-cv=$(get_current_var_value "cs_package_manager_custom_version")
-if [ -n "$cv" ]; then
-    if [[ "$cv" =~ ^dev[[:space:]] ]]; then
-        ddk=$(get_current_var_value "dev_drone_key")
-        if [ -z "$ddk" ]; then
-            warn "You selected a dev/CI build but 'dev_drone_key' is not set. You won't be able to use CI builds without it."
-        fi
-    fi
-
-    # If a custom version is set and mariadb_rpms_path is not set, set it implicitly
-    cur_pkgs_path=$(get_current_var_value "mariadb_rpms_path")
-    if [ -z "$cur_pkgs_path" ]; then
-        set_var_value "mariadb_rpms_path" "/tmp/pkgs"
-        note "Set 'mariadb_rpms_path' to '/tmp/pkgs' because a custom version was specified."
-    fi
-fi
 
 handle_additional_tags
 

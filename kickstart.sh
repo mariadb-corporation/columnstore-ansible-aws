@@ -1255,3 +1255,13 @@ if [ "${#CHANGELOG[@]}" -gt 0 ]; then
 else
     in_green "No changes were made during this run."
 fi
+
+# Offer to start deployment immediately
+echo ""
+note "Ready to deploy your cluster."
+echo "If a cluster was created earlier, ./deploy.sh will first destroy existing Terraform resources before applying a fresh deployment."
+if [[ "$(ask_boolean start_deploy_now "Do you want to start deployment now (run ./deploy.sh)?" "true")" == "true" ]]; then
+    echo "Starting deployment..."
+    ./deploy.sh
+    echo "Deployment script finished."
+fi

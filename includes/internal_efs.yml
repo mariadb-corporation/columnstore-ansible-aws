@@ -1,0 +1,47 @@
+---
+
+- hosts: "primary,replicas"
+  become: yes
+  become_user: root
+  vars_files:
+    - '../inventory/group_vars/distro/{{ ansible_distribution|lower }}{{ ansible_distribution_major_version }}.yml'
+    - '../inventory/group_vars/all.yml'
+
+  tasks:
+    - name: Ensure nfs-utils is installed
+      package:
+        name: "{{ nfs_utils }}"
+        state: present
+
+    - name: Create ColumnStore data directory
+      file:
+        path: "/var/lib/columnstore/data1"
+        state: directory
+        mode: '0755'
+        owner: mariadb
+        group: mariadb
+
+    - name: Check if internal EFS is currently mounted
+      shell: 'grep -qE " /var/lib/columnstore/data1 nfs4 " /proc/mounts'
+      register: mount_output
+      ignore_errors: true
+
+    - name: Force unmount internal EFS if already mounted
+      command: umount -fn /var/lib/columnstore/data1
+      when: mount_output.rc == 0
+      ignore_errors: true
+
+    - name: Remove EFS entry from /etc/fstab by mount point if present
+      lineinfile:
+        path: /etc/fstab
+        state: absent
+        regexp: '^[^#]*\s+/var/lib/columnstore/data1\s+nfs4'
+
+    - name: Mount internal EFS filesystem for ColumnStore data
+      mount:
+        path: "/var/lib/columnstore/data1"
+        src: "{{ internal_efs_dns_name }}:/"
+        fstype: nfs4
+        opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2
+        state: mounted
+      when: internal_efs_enabled | bool

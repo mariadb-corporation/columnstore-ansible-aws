@@ -1165,7 +1165,8 @@ fi
 
 check_or_choose_aws_key_pair
 
-create_shared_efs=$(ask_boolean "create_shared_efs" "Do you want to create a EFS volume that is shared between hosts?" "$(get_current_var_value "create_shared_efs" "false")")
+note "We can create a shared EFS volume for source code sync/build between your dev host and the cluster nodes. This is NOT used for ColumnStore data storage."
+create_shared_efs=$(ask_boolean "create_shared_efs" "Do you want to create a developer shared EFS volume?" "$(get_current_var_value "create_shared_efs" "false")")
 set_var_value "create_shared_efs" "$create_shared_efs"
 
 if [ "$create_shared_efs" == "false" ]; then
@@ -1206,7 +1207,7 @@ propose_change_value "mariadb_enterprise_token" true "Get MariaDB Enterprise tok
 echo ""
 
 cur_use_s3=$(get_current_var_value "use_s3" "false")
-use_s3=$(ask_boolean "use_s3" "Do you want to use S3 in MCS setup?" "$cur_use_s3")
+use_s3=$(ask_boolean "use_s3" "Do you want to use S3 in MCS setup? If not, an internal EFS will be created instead." "$cur_use_s3")
 set_var_value "use_s3" "$use_s3"
 echo ""
 

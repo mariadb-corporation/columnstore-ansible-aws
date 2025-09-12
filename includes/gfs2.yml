@@ -25,7 +25,6 @@
       with_items:
         - fence-agents-aws
         - gfs2-utils
-        - lvm2-cluster
         - pcs
 
     - name: "Creating Shared Folder"

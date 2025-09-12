@@ -30,12 +30,19 @@
 - name: "Preparing The Servers"
   import_playbook: includes/prepare.yml
 
+- name: "Role-aware shell prompt"
+  import_playbook: includes/shell_prompt.yml
+
 - name: "Dev support utils"
   import_playbook: includes/dev_utils.yml
 
-# - name: "Setting Up GFS2"
-#   import_playbook: includes/gfs2.yml
-#   when: use_s3
+#- name: "Setting Up GFS2"
+#  import_playbook: includes/gfs2.yml
+#  when: use_s3
+
+- name: "Configure internal EFS for ColumnStore data (when not using S3)"
+  import_playbook: includes/internal_efs.yml
+  when: not use_s3 | bool
 
 - name: "Configuring NVMe and Symlinks"
   import_playbook: includes/configure_nvme.yml

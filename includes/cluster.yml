@@ -196,6 +196,6 @@
       body_format: json
       body:
         timeout: 120
-        node: "{{ hostvars[item].private_dns }}"
+        node: "{{ hostvars[item].private_ip }}"
       timeout: 180
     with_items: "{{ groups['all'] | reject('search', '^mx') | reject('equalto', 'devhost') | list }}"

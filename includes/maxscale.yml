@@ -47,7 +47,7 @@
       url: http://127.0.0.1:8989/v1/servers
       method: POST
       body_format: json
-      body: {"data":{"id":"{{ item }}","type":"servers","attributes":{"parameters":{"address":"{{ hostvars[item].private_dns }}","protocol":"MariaDBBackend"}}}}
+      body: {"data":{"id":"{{ item }}","type":"servers","attributes":{"parameters":{"address":"{{ hostvars[item].private_ip }}","protocol":"MariaDBBackend"}}}}
       user: admin
       password: mariadb
       force_basic_auth: yes

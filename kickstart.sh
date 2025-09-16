@@ -1165,7 +1165,7 @@ fi
 
 check_or_choose_aws_key_pair
 
-note "We can create a shared EFS volume for source code sync/build between your dev host and the cluster nodes. This is NOT used for ColumnStore data storage."
+note "We can create a shared EFS volume for source code sync between your dev host and the cluster nodes. This is NOT used for ColumnStore data storage."
 create_shared_efs=$(ask_boolean "create_shared_efs" "Do you want to create a developer shared EFS volume?" "$(get_current_var_value "create_shared_efs" "false")")
 set_var_value "create_shared_efs" "$create_shared_efs"
 

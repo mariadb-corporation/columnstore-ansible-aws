@@ -180,6 +180,28 @@ resource "aws_volume_attachment" "ebs_attachment" {
   instance_id  = aws_instance.columnstore_node[count.index].id
 }
 
+# Creates an internal EFS file system for ColumnStore data when not using S3
+resource "aws_efs_file_system" "internal_efs" {
+  count = var.use_s3 ? 0 : 1
+
+  tags = {
+    Name = "${var.deployment_prefix}-internal-efs"
+    Purpose = "columnstore-data"
+  }
+}
+
+# Creates a mount target for the internal EFS in the specified subnet
+resource "aws_efs_mount_target" "internal_efs_target" {
+  count          = var.use_s3 ? 0 : 1
+  file_system_id = aws_efs_file_system.internal_efs[0].id
+  subnet_id      = var.aws_subnet
+
+  # Allows traffic to the EFS only from instances in the mcs_traffic security group
+  security_groups = [
+    aws_security_group.mcs_traffic.id
+  ]
+}
+
 # Creates the EFS file system if the create_shared_efs flag is enabled
 resource "aws_efs_file_system" "shared_efs" {
   count = var.create_shared_efs ? 1 : 0

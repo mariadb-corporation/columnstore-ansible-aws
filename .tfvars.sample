@@ -21,7 +21,7 @@ admin_user = "admin"
 admin_pass = "<random>"
 
 # MaxScale user credentials
-maxscale_user = "admin"
+maxscale_user = "mx_admin"
 maxscale_pass = "<random>"
 
 # Replication user credentials

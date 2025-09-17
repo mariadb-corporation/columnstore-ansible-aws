@@ -59,5 +59,9 @@ shared_efs_mount_point: "${shared_efs_mount_point}"
 shared_efs_include_dev_host: ${shared_efs_include_dev_host}
 shared_efs_dns_name: "${shared_efs_dns_name}"
 
+# Internal EFS for ColumnStore data when not using S3
+internal_efs_enabled: ${internal_efs_enabled}
+internal_efs_dns_name: "${internal_efs_dns_name}"
+
 # Sentry
 sentry_dsn: "${sentry_dsn}"

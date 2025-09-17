@@ -24,6 +24,7 @@
       method: DELETE
       user: admin
       password: mariadb
+      force_basic_auth: yes
       status_code: 204,404
     loop:
       - { resource: monitors, name: 'mcs_monitor?force=yes' }
@@ -37,6 +38,7 @@
       method: DELETE
       user: admin
       password: mariadb
+      force_basic_auth: yes
       status_code: 204,404
     with_items: "{{ groups['all'] | reject('search', '^mx') | reject('equalto', 'devhost') | list }}"
 
@@ -45,9 +47,10 @@
       url: http://127.0.0.1:8989/v1/servers
       method: POST
       body_format: json
-      body: {"data":{"id":"{{ item }}","type":"servers","attributes":{"parameters":{"address":"{{ hostvars[item].private_dns }}","protocol":"MariaDBBackend"}}}}
+      body: {"data":{"id":"{{ item }}","type":"servers","attributes":{"parameters":{"address":"{{ hostvars[item].private_ip }}","protocol":"MariaDBBackend"}}}}
       user: admin
       password: mariadb
+      force_basic_auth: yes
       status_code: 204
     with_items: "{{ groups['all'] | reject('search', '^mx') | reject('equalto', 'devhost') | list }}"
 
@@ -59,6 +62,7 @@
       body: {"data":{"id":"mcs_monitor","type":"monitors","attributes":{"module":"mariadbmon","parameters":{"user":"{{ maxscale_user }}","password":"{{ maxscale_pass }}","replication_user":"{{ repli_user}}","replication_password":"{{ repli_pass }}","cooperative_monitoring_locks":"majority_of_running","enforce_read_only_slaves":true,"auto_failover":"true","auto_rejoin":true}},"relationships":{"servers":{"data": "{{ groups['all'] | reject('search', '^mx') | reject('equalto', 'devhost') | map('regex_replace', '^(.*)$', '{\"id\": \"\\1\", \"type\": \"servers\"}') | map('from_json') | list }}" }}}}
       user: admin
       password: mariadb
+      force_basic_auth: yes
       status_code: 204
 
 
@@ -70,6 +74,7 @@
       body: {"data":{"id":"mcs_service","type":"services","attributes":{"router":"readwritesplit","parameters":{"user":"{{ maxscale_user }}","password":"{{ maxscale_pass }}","master_accept_reads":true}},"relationships":{"servers":{"data": "{{ groups['all'] | reject('search', '^mx') | reject('equalto', 'devhost') | map('regex_replace', '^(.*)$', '{\"id\": \"\\1\", \"type\": \"servers\"}') | map('from_json') | list }}" }}}}
       user: admin
       password: mariadb
+      force_basic_auth: yes
       status_code: 204
 
   - name: "Adding Listener To MaxScale"
@@ -80,6 +85,7 @@
       body: {"data":{"id":"mcs_listener","type":"listeners","attributes":{"parameters":{"protocol":"MariaDBClient","port":3306}},"relationships":{"services":{"data":[{"id":"mcs_service","type":"services"}]}}}}
       user: admin
       password: mariadb
+      force_basic_auth: yes
       status_code: 204
     no_log: true
 

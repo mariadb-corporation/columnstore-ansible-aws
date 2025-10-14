@@ -161,39 +161,17 @@ resource "aws_s3_bucket" "s3_bucket" {
   }
 }
 
-resource "aws_ebs_volume" "storagemanager" {
-  count                   = var.use_s3 ? 1 : 0
-  availability_zone       = var.aws_zone
-  size                    = 100
-  multi_attach_enabled    = true
-  type                    = "io2"
-  iops                    = 3000
-  tags = {
-    Name = "mcs-metadata"
-  }
-}
-
-resource "aws_volume_attachment" "ebs_attachment" {
-  count        = var.use_s3 ? var.num_columnstore_nodes : 0
-  device_name  = "/dev/sdf"
-  volume_id    = aws_ebs_volume.storagemanager[0].id
-  instance_id  = aws_instance.columnstore_node[count.index].id
-}
-
-# Creates an internal EFS file system for ColumnStore data when not using S3
+# Creates an internal EFS file system for ColumnStore (data when not using S3, storagemanager when using S3)
 resource "aws_efs_file_system" "internal_efs" {
-  count = var.use_s3 ? 0 : 1
-
   tags = {
     Name = "${var.deployment_prefix}-internal-efs"
-    Purpose = "columnstore-data"
+    Purpose = var.use_s3 ? "columnstore-storagemanager" : "columnstore-data"
   }
 }
 
 # Creates a mount target for the internal EFS in the specified subnet
 resource "aws_efs_mount_target" "internal_efs_target" {
-  count          = var.use_s3 ? 0 : 1
-  file_system_id = aws_efs_file_system.internal_efs[0].id
+  file_system_id = aws_efs_file_system.internal_efs.id
   subnet_id      = var.aws_subnet
 
   # Allows traffic to the EFS only from instances in the mcs_traffic security group

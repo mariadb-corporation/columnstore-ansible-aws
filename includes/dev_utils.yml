@@ -1,5 +1,5 @@
 - hosts: devhost
-  become: yes
+  become: no
   vars_files:
     - '../inventory/group_vars/distro/{{ ansible_distribution | lower }}{{ ansible_distribution_major_version }}.yml'
     - '../inventory/group_vars/all.yml'

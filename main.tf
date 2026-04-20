@@ -117,7 +117,7 @@ resource "aws_instance" "columnstore_node" {
   root_block_device {
     volume_size = var.columnstore_node_root_block_size
     volume_type = "gp3"
-    iops        = 16000
+    iops        = min(16000, var.columnstore_node_root_block_size * 500)
   }
   user_data              = file("terraform_includes/create_user.sh")
   vpc_security_group_ids = [aws_security_group.mcs_traffic.id]

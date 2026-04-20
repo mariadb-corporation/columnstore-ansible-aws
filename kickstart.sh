@@ -1159,12 +1159,6 @@ if [ -n "$cv" ]; then
         fi
     fi
 
-    # If a custom version is set and mariadb_rpms_path is not set, set it implicitly
-    cur_pkgs_path=$(get_current_var_value "mariadb_rpms_path")
-    if [ -z "$cur_pkgs_path" ]; then
-        set_var_value "mariadb_rpms_path" "/tmp/pkgs"
-        note "Set 'mariadb_rpms_path' to '/tmp/pkgs' because a custom version was specified."
-    fi
 fi
 
 check_or_choose_aws_key_pair

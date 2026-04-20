@@ -48,13 +48,13 @@
   import_playbook: includes/configure_nvme.yml
   when: mariadb_has_nvme
 
-- name: "Install ColumnStore from packages"
+- name: "Install ColumnStore via cs_package_manager"
   import_playbook: includes/install_cs_from_pkgs.yml
-  when: mariadb_rpms_path is defined and mariadb_rpms_path != "" and mariadb_rpms_path is not none
+  when: cs_package_manager_custom_version is defined and cs_package_manager_custom_version != "" and cs_package_manager_custom_version is not none
 
 - name: "Install ColumnStore from Enterprise repo"
   import_playbook: includes/install_cs_from_enterprise_repo.yml
-  when: mariadb_rpms_path is not defined or mariadb_rpms_path == "" or mariadb_rpms_path is none
+  when: cs_package_manager_custom_version is not defined or cs_package_manager_custom_version == "" or cs_package_manager_custom_version is none
 
 - name: "Setup Sentry integration for CMAPI"
   import_playbook: includes/sentry.yml

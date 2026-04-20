@@ -163,39 +163,23 @@
   tasks:
 
   - name: "Fetch existing nodes in the cluster"
-    uri:
-      url: "https://{{ hostvars['mcs1'].ansible_host }}:8640/cmapi/0.4.0/cluster/status"
-      method: GET
-      headers:
-        Content-Type: application/json
-        x-api-key: "{{ api_key }}"
-      validate_certs: no
-      return_content: yes
-      status_code: 200
+    shell: mcs cluster status
     register: cluster_info
+    changed_when: false
 
   - name: "Debug: Print existing nodes in the cluster"
     debug:
-      msg: "{{ cluster_info.json }}"
+      msg: "{{ cluster_info.stdout }}"
+
+  - name: "Parse cluster node count"
+    set_fact:
+      cluster_num_nodes: "{{ (cluster_info.stdout | from_json).num_nodes | default(0) | int }}"
 
   - name: "Remove existing nodes from the cluster"
-    shell: mcs cluster node remove --node {{ item.key }}
-    with_dict: "{{ cluster_info.json }}"
-    when: cluster_info.json['num_nodes'] | int > 0
+    shell: mcs cluster node remove --node {{ item }}
+    with_items: "{{ (cluster_info.stdout | from_json).keys() | reject('equalto', 'timestamp') | reject('equalto', 'num_nodes') | list }}"
+    when: cluster_num_nodes | int > 0
 
   - name: "Adding Nodes To ColumnStore Cluster"
-    uri:
-      url: "https://{{ hostvars['mcs1'].ansible_host }}:8640/cmapi/0.4.0/cluster/node"
-      method: PUT
-      headers:
-        Content-Type: application/json
-        x-api-key: "{{ api_key }}"
-      validate_certs: no
-      return_content: yes
-      status_code: 200
-      body_format: json
-      body:
-        timeout: 120
-        node: "{{ hostvars[item].private_ip }}"
-      timeout: 180
+    shell: mcs cluster node add --node {{ hostvars[item].private_ip }}
     with_items: "{{ groups['all'] | reject('search', '^mx') | reject('equalto', 'devhost') | list }}"

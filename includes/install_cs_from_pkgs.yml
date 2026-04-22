@@ -10,11 +10,12 @@
 
   tasks:
 
-  - name: "Copy cs_package_manager to nodes"
-    copy:
-      src: "../cs_package_manager.sh"
+  - name: "Download cs_package_manager to nodes"
+    get_url:
+      url: "{{ cs_package_manager_url | default('https://raw.githubusercontent.com/mariadb-corporation/mariadb-columnstore-engine/refs/heads/stable-23.10/cmapi/scripts/cs_package_manager.sh') }}"
       dest: "/usr/local/bin/cs_package_manager.sh"
       mode: '0755'
+      force: yes
 
   - name: "Debug cs_package_manager_custom_version"
     debug:
@@ -22,7 +23,7 @@
 
   - name: "Install MariaDB ColumnStore via cs_package_manager"
     command: >-
-      bash /usr/local/bin/cs_package_manager.sh install {{ cs_package_manager_custom_version }}
+      bash /usr/local/bin/cs_package_manager.sh install {{ cs_package_manager_custom_version }} --with-dev
       {% if dev_drone_key is defined and dev_drone_key != "" %}-dev {{ dev_drone_key }}{% endif %}
     register: cs_install_output
 

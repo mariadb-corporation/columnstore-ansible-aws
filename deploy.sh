@@ -57,6 +57,10 @@ main() {
 		log "Ansible not found. To provision, run: ansible-playbook provision.yml"
 	fi
 
+	log "Deployment summary:"
+	terraform output columnstore_public_addresses
+	terraform output maxscale_public_addresses
+
 	log "Done."
 }
 

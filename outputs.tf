@@ -25,6 +25,28 @@ output "ssh_key_file" {
   value = var.ssh_key_file
 }
 
+output "columnstore_public_addresses" {
+  description = "Public DNS and IP of each ColumnStore node"
+  value = {
+    for i in range(0, length(aws_instance.columnstore_node)) :
+    "mcs${i + 1}" => {
+      public_dns = aws_instance.columnstore_node[i].public_dns
+      public_ip  = aws_instance.columnstore_node[i].public_ip
+    }
+  }
+}
+
+output "maxscale_public_addresses" {
+  description = "Public DNS and IP of each MaxScale instance"
+  value = {
+    for i in range(0, length(aws_instance.maxscale_instance)) :
+    "mx${i + 1}" => {
+      public_dns = aws_instance.maxscale_instance[i].public_dns
+      public_ip  = aws_instance.maxscale_instance[i].public_ip
+    }
+  }
+}
+
 locals {
   columnstore_nodes = [
     for i in range(0, length(aws_instance.columnstore_node)) :

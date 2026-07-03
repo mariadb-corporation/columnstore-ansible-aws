@@ -84,8 +84,7 @@
     blockinfile:
       path: '{{ columnstore_cnf }}'
       block: |
-        character_set_server = utf8
-        collation_server = utf8_general_ci
+        # this value only for testing without loose- prefix
         columnstore_use_import_for_batchinsert=ON
         #gtid_strict_mode = ON
         ignore_db_dirs = .pki
@@ -132,6 +131,7 @@
       name: mariadb-columnstore
       state: stopped
       enabled: no
+    when: cs_package_manager_custom_version is not defined or cs_package_manager_custom_version == "" or cs_package_manager_custom_version is none
 
   - name: "Installing CMAPI Server"
     package:
@@ -140,10 +140,14 @@
       update_cache: yes
     with_items:
       - '{{ mariadb_columnstore_cmapi }}'
+    when: cs_package_manager_custom_version is not defined or cs_package_manager_custom_version == "" or cs_package_manager_custom_version is none
 
   - name: "Enabling CMAPI Server"
     systemd:
       name: mariadb-columnstore-cmapi
       state: started
       enabled: yes
+    when: cs_package_manager_custom_version is not defined or cs_package_manager_custom_version == "" or cs_package_manager_custom_version is none
 
+  - name: "Setting CMAPI API Key"
+    shell: mcs set api-key --key '{{ api_key }}'

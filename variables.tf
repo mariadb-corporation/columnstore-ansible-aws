@@ -256,14 +256,8 @@ variable "reboot" {
   default = true
 }
 
-# Optional - Requires "mariadb_rpms_path" to be defined - Arguments for cs_package_manager to auto download rpms
+# Arguments for cs_package_manager to install a specific version (e.g. "dev brunch cron/32655")
 variable "cs_package_manager_custom_version" {
-  type    = string
-  default = ""
-}
-
-# The path mariadb and columnstore rpms are preloaded to after terraform apply --auto-approve, but before running ansible
-variable "mariadb_rpms_path" {
   type    = string
   default = ""
 }

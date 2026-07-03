@@ -438,9 +438,9 @@ ensure_profile_credentials() {
     else
         # Static or non-SSO profile
         local key secret token
-        key=$(aws configure get aws_access_key_id --profile "$profile_name")
-        secret=$(aws configure get aws_secret_access_key --profile "$profile_name")
-        token=$(aws configure get aws_session_token --profile "$profile_name")
+        key=$(aws configure get aws_access_key_id --profile "$profile_name" 2>/dev/null || true)
+        secret=$(aws configure get aws_secret_access_key --profile "$profile_name" 2>/dev/null || true)
+        token=$(aws configure get aws_session_token --profile "$profile_name" 2>/dev/null || true)
 
         if [[ -z "$key" || -z "$secret" ]]; then
             echo "Failed to extract credentials from non-SSO profile '$profile_name'"
@@ -1152,15 +1152,13 @@ if [ -n "$cv" ]; then
         ddk=$(get_current_var_value "dev_drone_key")
         if [ -z "$ddk" ]; then
             warn "You selected a dev/CI build but 'dev_drone_key' is not set. You won't be able to use CI builds without it."
+            propose_change_value "dev_drone_key" true "Enter dev_drone_key for CI builds"
+        else
+            echo "dev_drone_key is already set to: $(mask_value "$ddk")"
+            propose_change_value "dev_drone_key" true "Enter new dev_drone_key or press Enter to keep current"
         fi
     fi
 
-    # If a custom version is set and mariadb_rpms_path is not set, set it implicitly
-    cur_pkgs_path=$(get_current_var_value "mariadb_rpms_path")
-    if [ -z "$cur_pkgs_path" ]; then
-        set_var_value "mariadb_rpms_path" "/tmp/pkgs"
-        note "Set 'mariadb_rpms_path' to '/tmp/pkgs' because a custom version was specified."
-    fi
 fi
 
 check_or_choose_aws_key_pair
@@ -1203,7 +1201,7 @@ else
 fi
 echo ""
 
-propose_change_value "mariadb_enterprise_token" true "Get MariaDB Enterprise token from https://mariadb.com/downloads/token"
+propose_change_value "mariadb_enterprise_token" true "Get MariaDB Enterprise token from https://customers.mariadb.com/downloads/token/"
 echo ""
 
 cur_use_s3=$(get_current_var_value "use_s3" "false")
@@ -1226,6 +1224,18 @@ fi
 
 propose_change_value "num_columnstore_nodes" false "Number of ColumnStore nodes in the cluster"
 propose_change_value "num_maxscale_instances" false "Number of MaxScale nodes in the cluster (at least 1)"
+
+num_mx=$(get_current_var_value "num_maxscale_instances")
+if [[ "$num_mx" =~ ^[0-9]+$ ]] && (( num_mx >= 1 )); then
+    while true; do
+        met=$(get_current_var_value "mariadb_enterprise_token")
+        if [ -n "$met" ]; then
+            break
+        fi
+        warn "MariaDB Enterprise token cannot be empty. MaxScale installation requires it."
+        propose_change_value "mariadb_enterprise_token" true "Get MariaDB Enterprise token from https://customers.mariadb.com/downloads/token/"
+    done
+fi
 
 propose_change_value "aws_mariadb_instance_size"
 

@@ -25,6 +25,28 @@ output "ssh_key_file" {
   value = var.ssh_key_file
 }
 
+output "columnstore_public_addresses" {
+  description = "Public DNS and IP of each ColumnStore node"
+  value = {
+    for i in range(0, length(aws_instance.columnstore_node)) :
+    "mcs${i + 1}" => {
+      public_dns = aws_instance.columnstore_node[i].public_dns
+      public_ip  = aws_instance.columnstore_node[i].public_ip
+    }
+  }
+}
+
+output "maxscale_public_addresses" {
+  description = "Public DNS and IP of each MaxScale instance"
+  value = {
+    for i in range(0, length(aws_instance.maxscale_instance)) :
+    "mx${i + 1}" => {
+      public_dns = aws_instance.maxscale_instance[i].public_dns
+      public_ip  = aws_instance.maxscale_instance[i].public_ip
+    }
+  }
+}
+
 locals {
   columnstore_nodes = [
     for i in range(0, length(aws_instance.columnstore_node)) :
@@ -89,7 +111,6 @@ resource "local_file" "AnsibleVariables" {
       aws_mariadb_instance_size= var.aws_mariadb_instance_size,
       aws_maxscale_instance_size= var.aws_maxscale_instance_size,
       mariadb_has_nvme         = can(regex("d\\.metal", var.aws_mariadb_instance_size)) ? true : false,
-      mariadb_rpms_path        = var.mariadb_rpms_path,
       cs_package_manager_custom_version = var.cs_package_manager_custom_version,
       dev_drone_key            = var.dev_drone_key,
       reboot                   = var.reboot,

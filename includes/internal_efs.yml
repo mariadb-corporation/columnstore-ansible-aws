@@ -13,6 +13,7 @@
         name: "{{ nfs_utils }}"
         state: present
 
+    # Mount EFS to /var/lib/columnstore/data1 when NOT using S3
     - name: Create ColumnStore data directory
       file:
         path: "/var/lib/columnstore/data1"
@@ -20,22 +21,25 @@
         mode: '0755'
         owner: mariadb
         group: mariadb
+      when: not use_s3 | bool
 
-    - name: Check if internal EFS is currently mounted
+    - name: Check if internal EFS is currently mounted on data1
       shell: 'grep -qE " /var/lib/columnstore/data1 nfs4 " /proc/mounts'
-      register: mount_output
+      register: data1_mount_output
       ignore_errors: true
+      when: not use_s3 | bool
 
-    - name: Force unmount internal EFS if already mounted
+    - name: Force unmount internal EFS from data1 if already mounted
       command: umount -fn /var/lib/columnstore/data1
-      when: mount_output.rc == 0
+      when: not use_s3 | bool and data1_mount_output.rc == 0
       ignore_errors: true
 
-    - name: Remove EFS entry from /etc/fstab by mount point if present
+    - name: Remove EFS entry from /etc/fstab by data1 mount point if present
       lineinfile:
         path: /etc/fstab
         state: absent
         regexp: '^[^#]*\s+/var/lib/columnstore/data1\s+nfs4'
+      when: not use_s3 | bool
 
     - name: Mount internal EFS filesystem for ColumnStore data
       mount:
@@ -44,4 +48,41 @@
         fstype: nfs4
         opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2
         state: mounted
-      when: internal_efs_enabled | bool
+      when: not use_s3 | bool
+
+    # Mount EFS to /var/lib/columnstore/storagemanager when using S3
+    - name: Create ColumnStore storagemanager directory
+      file:
+        path: "/var/lib/columnstore/storagemanager"
+        state: directory
+        mode: '0755'
+        owner: mariadb
+        group: mariadb
+      when: use_s3 | bool
+
+    - name: Check if internal EFS is currently mounted on storagemanager
+      shell: 'grep -qE " /var/lib/columnstore/storagemanager nfs4 " /proc/mounts'
+      register: storagemanager_mount_output
+      ignore_errors: true
+      when: use_s3 | bool
+
+    - name: Force unmount internal EFS from storagemanager if already mounted
+      command: umount -fn /var/lib/columnstore/storagemanager
+      when: use_s3 | bool and storagemanager_mount_output.rc == 0
+      ignore_errors: true
+
+    - name: Remove EFS entry from /etc/fstab by storagemanager mount point if present
+      lineinfile:
+        path: /etc/fstab
+        state: absent
+        regexp: '^[^#]*\s+/var/lib/columnstore/storagemanager\s+nfs4'
+      when: use_s3 | bool
+
+    - name: Mount internal EFS filesystem for ColumnStore storagemanager
+      mount:
+        path: "/var/lib/columnstore/storagemanager"
+        src: "{{ internal_efs_dns_name }}:/"
+        fstype: nfs4
+        opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2
+        state: mounted
+      when: use_s3 | bool
